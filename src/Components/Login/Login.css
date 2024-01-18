@@ -1,0 +1,130 @@
+.loginBox {
+  width:  350px;
+  margin: 60px auto 0px;
+  min-height:  200px;
+  background:  #fff;
+  border-radius:  5px;
+  padding:  10px 40px;
+  box-sizing:  border-box;
+  box-shadow: 0 5px 5px rgba(0,0,0,.4);
+  font-size: 12px;
+}
+.loginBox .create_account
+{
+  color:#007aff;
+  font-size: 12px;
+}
+.loginBox .text-center
+{
+  text-align: center;
+  padding-top: 10px !important;
+}
+.loginBox .icon {
+  text-align: center;
+  border: 1px solid #CCC;
+  box-shadow: 0 5px 5px rgba(0,0,0,.4);
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  margin: 0px auto 20px;
+}
+.loginBox .user {
+  margin: 15px auto 20px;
+  display: block;
+  margin-bottom: 20px;
+  width:50px;
+}
+.loginBox h3 {
+  margin: 0 !important;
+  padding: 0 0 20px !important;
+  color: #000 !important;
+  text-align: center !important;
+  font-weight: normal bold !important;
+  font-size: 37px !important;
+  text-decoration: none !important;
+}
+.loginBox input {
+  width:  100%;
+  margin-bottom:  20px;
+}
+.loginBox input[type="email"],  .loginBox input[type="password"] {
+  border:  1px solid #aaa;
+  border-radius: 0px;
+  outline:  none;
+  height:  40px;
+  color:  #000;
+  background:  transparent;
+  margin-top: 0px;
+  font-size:  12px;
+  padding-left:  10px;
+  box-sizing:  border-box;
+}
+.loginBox a.signup {
+  color: #ee0763 !important;
+  text-decoration: underline !important;
+  font-weight: normal !important;
+}
+.loginBox input[type="text"]:focus,  .loginBox input[type="password"]:focus {
+  border-bottom:  2px solid #42F3FA;
+}
+.loginBox .inputBox {
+  position: relative;
+  padding-bottom: 10px;
+}
+.loginBox .inputBox span {
+  position:  absolute;
+  top:  10px;
+  color:  #262626;
+}
+.loginBox input[type="submit"] {
+  border: none;
+  outline: none;
+  height: 40px;
+  font-size: 14px;
+  font-weight: bold;
+  background-color: #ee0763;
+  color: #fff;
+  border-radius: 0px;
+  cursor: pointer;
+  width: 100%;
+  margin: 0px auto 5px;
+  text-transform: none;
+}
+.loginBox .back
+{
+  text-align: center;
+  text-transform: uppercase;
+  text-decoration: underline;
+  padding-bottom: 5px;
+  font-size: 14px;
+  color: #666;
+}
+.loginBox .login-btn
+{
+  text-align: center;
+}
+.loginBox a {
+  color:  #007aff;
+  font-size:  12px;
+  font-weight:  bold;
+  text-decoration:  underline;
+  text-align:  center;
+}
+.loginBox a:hover {
+  color:  #ff5f9f;
+}
+.loginBox p {
+  color: #111;
+  font-size: 13px;
+  text-align: center;
+}
+.passage_test
+{
+  text-align: justify;
+}
+.passage_test ul
+{
+  list-style-type: disc;
+  margin: 0px;
+  padding: 20px;
+}
