@@ -6,11 +6,13 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import DesmosCalculator from "../Components/DesmosCalculator";
 import CountdownTimer from "./CountdownTimer";
-import Modal from "../Components/SatTest/Modal"; 
+import Modal from "../Components/SatTest/Modal";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
+
 const first_name = localStorage.getItem("first_name");
 const last_name = localStorage.getItem("last_name");
 const userid = localStorage.getItem("userid");
+
 const LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX =
   "LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX".toLowerCase();
 
@@ -95,9 +97,7 @@ function QuestionModal({
           <div style={{ float: "left", width: "90%" }}>
             <h2>
               Section {section}, Module {module}:{" "}
-              {section === 1
-                ? " Reading & Writing"
-                : " Math"}
+              {section === 1 ? " Reading & Writing" : " Math"}
             </h2>
           </div>
           <div style={{ float: "right", width: "10%" }}>
@@ -145,14 +145,19 @@ function QuestionModal({
 }
 
 function ModalAnswers(props) {
-  useEffect(() => { 
-    if (props.show) {
-      // save answer test here
-      saveAnswerTest();
-    }
-  }, [props.data, props.show], props.test_id);
+  useEffect(
+    () => {
+      if (props.show) {
+        // save answer test here
+        saveAnswerTest();
+      }
+    },
+    [props.data, props.show],
+    props.test_id
+  );
 
   const saveAnswerTest = async () => {
+    //  console.log(props.data);
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}saveanswertest`,
@@ -162,7 +167,7 @@ function ModalAnswers(props) {
           section_type: props.sectionType,
           answers: props.data,
           score: props.score,
-          userid: userid
+          userid: userid,
         },
         {
           headers: {
@@ -177,9 +182,8 @@ function ModalAnswers(props) {
     } catch (error) {
       console.error("Error saving answers:", error);
     }
-  };  
+  };
 
-  
   return (
     <>
       <div style={{ textAlign: "center", paddingTop: "30px" }}>
@@ -242,13 +246,48 @@ function ModalAnswers(props) {
     </>
   );
 }
-
-const getSatQuestionsByQuestionTestId = (questionTestId) => {
+const fetchPendingQuestions = async (questionTestId, sectionType, moduleType) => {
   try {
-    return (
-      JSON.parse(localStorage.getItem("sat_questions"))?.[questionTestId] ||
-      null
+    const response = await axios.get(
+      `${process.env.REACT_APP_BASE_URL}getPendingTest/${userid}/${questionTestId}${ sectionType ? `?sectionType=${sectionType}&moduleType=${moduleType}` : ''}`,
+      {
+        headers: {
+          "content-type": "application/json",
+          token: localStorage.getItem("token"),
+        },
+      }
     );
+    if (response.status >= 200 && response.status < 300) {
+      return response.data.data.data;
+    }
+  } catch (error) {
+    console.error("Error fetching pending questions:", error);
+  }
+};
+const getSatQuestionsByQuestionTestId = async (questionTestId, sectionType, moduleType) => {
+  let testData = null;
+  //localStorage.removeItem("sat_questions");
+  try {
+    testData = await fetchPendingQuestions(questionTestId, sectionType, moduleType);
+    // if (testData) {
+    //   const sat_questions = {
+    //     [questionTestId]: testData,
+    //   };
+    // }
+     // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    // } else {
+    //   const currentStorage = JSON.parse(localStorage.getItem("sat_questions"));
+    //   let storageData = null;
+    //   if (currentStorage) {
+    //     storageData = currentStorage[Object.keys(currentStorage)[0]];
+    //   }
+
+    //   if (storageData && Object.keys(storageData).length !== 0) {
+    //     testData = storageData;
+    //   }
+    // }
+
+    return testData || null;
   } catch (error) {
     return null;
   }
@@ -256,38 +295,74 @@ const getSatQuestionsByQuestionTestId = (questionTestId) => {
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 3000) / 100; // 30 minutes in miliseconds
+const QUESTION_DURATON = (1 * 60 * 3200) / 100;
+const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
+  const [mountTime, setMountTime] = useState(null);
+  const [buttonClickTime, setButtonClickTime] = useState(null);
+
   const { id: questionTestId = null } = useParams();
 
-  const currentSatQuestions = getSatQuestionsByQuestionTestId(questionTestId);
-
   const [data, setData] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
-    currentSatQuestions?.currentQuestionIndex || 0
-  );
+  useEffect(() => {
+    const currentTime = new Date();
+    setMountTime(currentTime);
+  }, [buttonClickTime]);
+
+  const savePendingTest = async (sat_questions) => {
+   // const currentStorage = JSON.parse(sat_questions);
+    const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}savePendingTest`,
+        {
+          answers: currentQuestionObj.answers,
+          userid: userid,
+          testid: Object.keys(sat_questions)[0],
+          submitted: false,
+          currentSectionType: currentQuestionObj.currentSectionType,
+          currentModuleType: currentQuestionObj.currentModuleType,
+          sat_questions: sat_questions,
+          currentQuestionIndex: currentQuestionObj.currentQuestionIndex,
+        },
+        {
+          headers: {
+            "content-type": "application/json",
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+      if (response.status === 201) {
+        // navigate(`/practice_tests`);
+        console.log("success save pending answer for this module.");
+      }
+    } catch (error) {
+      console.error("Error saving pending answers:", error);
+    }
+  };
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [showGap, setShowGap] = useState(false); // State to manage the gap display
-  const [showStrike, setShowStrike] = useState(
-    currentSatQuestions?.isShowStrike || false
-  ); // State to manage the gap display
+  const [showStrike, setShowStrike] = useState(false); // State to manage the gap display
+  const [currentSatQuestions, setCurrentSatQuestions] = useState({
+    currentQuestionIndex: 0,
+    isShowStrike: false,
+    currentModuleType: 1,
+    currentSectionType: 1,
+  });
 
   const [showModalAnswer, setShowModalAnswer] = useState(false);
-  const [moduleType, setModuleType] = useState(
-    currentSatQuestions?.currentModuleType || 1
-  );
-  const [sectionType, setSectionType] = useState(
-    currentSatQuestions?.currentSectionType || 1
-  );
-  const [loading, setLoading] = useState(false);
+  const [moduleType, setModuleType] = useState(1);
+  const [sectionType, setSectionType] = useState(1);
+  const [loading, setLoading] = useState(true);
   const [accumulatedData, setAccumulatedData] = useState([]);
   const [isTimerVisible, setIsTimerVisible] = useState(true);
   const [isPauseTimer, setIsPauseTimer] = useState(false);
 
-  
   const [isMDropdownOpen, setIsMDropdownOpen] = useState(false);
 
   const handleMoreClick = () => {
@@ -311,6 +386,7 @@ function SatQuestion() {
   const [isStrikedOut, setIsStrikedOut] = useState(false);
   const [answertext, setAnswertext] = useState("");
   const [isBreakTime, setIsBreakTime] = useState(false);
+  const loadingTimer = setTimeout(() => setLoading(false), 200);
 
   // Handle input field changes
   const handleAnswertextChange = (e) => {
@@ -344,13 +420,28 @@ function SatQuestion() {
     setIsReferenceVisible(false);
   };
 
+  useEffect(() => {
+    const getData = async () => {
+      const questionData = await getSatQuestionsByQuestionTestId(questionTestId);
+
+      if (questionData && (questionData.currentSectionType > sectionType || questionData.currentModuleType > moduleType)  && questionData.answers) {
+        setCurrentSatQuestions(questionData);
+        setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
+        setShowStrike(questionData.isShowStrike || false);
+        setModuleType(questionData?.currentModuleType || 1);
+        setSectionType(questionData?.currentSectionType || 1);
+      }
+    };
+
+    getData();
+  }, []);
+
   // useEffect(() => {
   //   localStorage.setItem(
   //     LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX,
   //     JSON.stringify({ [questionTestId]: currentQuestionIndex })
   //   );
   // }, [currentQuestionIndex, questionTestId]);
-
 
   // const sentence = "asd qwe zxc rty fgh 123";
   // const wordToHighlight = "123";
@@ -372,12 +463,12 @@ function SatQuestion() {
   //   sentence,
   //   wordToHighlight,
   //   highlightColor
-  // ); 
+  // );
   useEffect(() => {
-    (async () => { 
+    (async () => {
       const currentQuestion = data?.[currentQuestionIndex];
-      console.log(annotations);
-      
+      //console.log(annotations);
+
       setSelectedAnswer(currentQuestion?.selected_answer);
       setAnswertext(currentQuestion?.selected_answer);
     })();
@@ -385,29 +476,32 @@ function SatQuestion() {
 
   useEffect(() => {
     (async () => {
-      await getQuestions(questionTestId, moduleType, sectionType);
+      const questionData = await getSatQuestionsByQuestionTestId(questionTestId, moduleType, sectionType); //Send section and module
+
+      if(questionData && questionData.answers?.length) {
+        setData(questionData.answers);
+      } else {
+        await getQuestions(questionTestId, moduleType, sectionType);
+      } 
     })();
   }, [moduleType, sectionType]);
 
-  useEffect(() => {
-    // {
-    //   bottom: 347,
-    //   height: 16,
-    //   left: 1058.0859375,
-    //   right: 1196.640625,
-    //   top: 331;
-    //   width: 138.5546875,
-    //   x: 1058.0859375,
-    //   y: 331,
-    // test.getAttribute("style", "color:green");
-    // test.textContent = toDOM(currentSatQuestions?.parentEl)
-  }, [currentSatQuestions?.range]);
-
- 
+  // useEffect(() => {
+  //   // {
+  //   //   bottom: 347,
+  //   //   height: 16,
+  //   //   left: 1058.0859375,
+  //   //   right: 1196.640625,
+  //   //   top: 331;
+  //   //   width: 138.5546875,
+  //   //   x: 1058.0859375,
+  //   //   y: 331,
+  //   // test.getAttribute("style", "color:green");
+  //   // test.textContent = toDOM(currentSatQuestions?.parentEl)
+  // }, [currentSatQuestions?.range]);
 
   const handleOptionClick = (answerIndex) => {
-
-    console.log('answerIndex',answerIndex)
+    // console.log('answerIndex',answerIndex)
     rhandleStrikeout(answerIndex);
     setSelectedAnswer(answerIndex);
 
@@ -431,7 +525,7 @@ function SatQuestion() {
   };
 
   const handleAnswerSelect = (answerIndex) => {
-    console.log('s')
+    console.log("s");
     setSelectedAnswer(answerIndex);
 
     // Update the score based on the correct answer
@@ -487,7 +581,8 @@ function SatQuestion() {
       },
     };
 
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    savePendingTest(sat_questions);
   };
 
   const toggleStrike = () => {
@@ -504,8 +599,10 @@ function SatQuestion() {
   };
 
   const handleNextQuestion = () => {
-
     // Update selected answer for the current question
+    const currentTime = new Date();
+    setButtonClickTime(currentTime);
+
     const currentData = [...data];
 
     const isInput =
@@ -515,6 +612,13 @@ function SatQuestion() {
       ...currentData?.[currentQuestionIndex],
       selected_answer: isInput ? answertext : selectedAnswer,
     });
+    if (mountTime) {
+      const difference = (currentTime - mountTime) / 1000;
+      Object.assign(currentData[currentQuestionIndex], {
+        ...currentData?.[currentQuestionIndex],
+        duration: difference,
+      });
+    }
     setData(currentData);
     if (showModalAnswer && currentQuestionIndex === data?.length - 1) {
       handleContinue();
@@ -540,7 +644,8 @@ function SatQuestion() {
       },
     };
 
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions)); 
+   // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    savePendingTest(sat_questions);
   };
 
   const handlePrevQuestion = () => {
@@ -570,18 +675,17 @@ function SatQuestion() {
       },
     };
 
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions)); 
+    //localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    savePendingTest(sat_questions);
   };
 
   const [showModal, setShowModal] = useState(false);
 
   const [showDirections, setShowDirections] = useState(true);
 
-  
-
   const [selectedTestId, setSelectedTestId] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportResponse, setReportResponse] = useState(null); 
+  const [reportResponse, setReportResponse] = useState(null);
   const navigate = useNavigate();
   // ... Other functions and code ...
 
@@ -646,8 +750,13 @@ function SatQuestion() {
     setCurrentQuestionIndex(data.length - 1);
   };
 
-  const getQuestions = async (test_id = questionTestId, module_type = 1, section_type = 1) => {
+  const getQuestions = async (
+    test_id = questionTestId,
+    module_type = moduleType,
+    section_type = sectionType
+  ) => {
     try {
+      clearTimeout(loadingTimer);
       setLoading(true);
       const response = await axios.get(
         `${process.env.REACT_APP_BASE_URL}getallquestions`,
@@ -660,7 +769,7 @@ function SatQuestion() {
         }
       );
       if (response.status === 200) {
-        const questions = response?.data || [];
+        const questions = response?.data || []; debugger;
         if (currentSatQuestions?.answers?.length) {
           const newQuestions = questions?.map((q) => {
             const question = currentSatQuestions?.answers?.find(
@@ -688,11 +797,10 @@ function SatQuestion() {
   if (loading) {
     return <div>Loading...</div>;
   }
-  <i></i>
+  <i></i>;
 
-  const currentQuestion = data[currentQuestionIndex];
-
-  if (data.length === 0) {
+  const currentQuestion = data[currentQuestionIndex]; debugger
+  if (!loading && data.length === 0) {
     return (
       <ModuleFinish
         onTimeIsUp={() => {
@@ -728,6 +836,10 @@ function SatQuestion() {
     pdf.save("SAT_Questions_Answers.pdf");
   };
 
+  const handleExit = () => {
+   // savePendingTest();
+    navigate(`/practice_tests`);
+  };
   const refetchQuestions = async () => {
     if (moduleType === 1 && sectionType === 1) {
       setModuleType(moduleType + 1);
@@ -774,23 +886,23 @@ function SatQuestion() {
       packages: { "[+]": ["html"] },
       inlineMath: [
         ["$", "$"],
-        ["\\(", "\\)"]
+        ["\\(", "\\)"],
       ],
       displayMath: [
         ["$$", "$$"],
-        ["\\[", "\\]"]
+        ["\\[", "\\]"],
       ],
       chtml: {
         minScale: 1.22,
       },
       options: {
         processHtml: true, // Enable processing of HTML tags
-      }
-    }
+      },
+    },
   };
 
   const handleStrikeout = (choiceKey) => {
-    console.log("sdfdsf")
+    console.log("sdfdsf");
     setIsStrikedOut(!isStrikedOut);
     // Update the score based on the correct answer
     const currentData = [...data];
@@ -805,18 +917,18 @@ function SatQuestion() {
     }
 
     // Update the data with the selected answer
-   Object.assign(currentData[currentQuestionIndex], {
+    Object.assign(currentData[currentQuestionIndex], {
       ...currentQuestion,
       strikeoptions: strikeoptions,
     });
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove('highlighted');
+      element.classList.remove("highlighted");
     }
 
     setData(currentData);
 
-     /*const updatedData = data.map((question) => ({
+    /*const updatedData = data.map((question) => ({
       ...question,
       currentQuestion,
     }));
@@ -834,24 +946,24 @@ function SatQuestion() {
   const rhandleStrikeout = (choiceKey) => {
     // Set isStrikedOut to false
     setIsStrikedOut(false);
-  
+
     // Update the score based on the correct answer
     const currentData = [...data];
     const currentQuestion = currentData[currentQuestionIndex];
-  
+
     let strikeoptions = [...(currentQuestion.strikeoptions ?? [])];
 
     strikeoptions = strikeoptions.filter((option) => option !== choiceKey);
-  
+
     // Update the data with the selected answer
     Object.assign(currentData[currentQuestionIndex], {
       ...currentQuestion,
       strikeoptions: strikeoptions,
     });
-  
+
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove('highlighted');
+      element.classList.remove("highlighted");
     }
     // Update the state or any other necessary logic based on the updated data
     setData(currentData);
@@ -896,7 +1008,8 @@ function SatQuestion() {
         },
       };
 
-      localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+      // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+      savePendingTest(sat_questions)
     }
     selection?.removeAllRanges();
   };
@@ -1000,7 +1113,6 @@ function SatQuestion() {
       // update currentQuestion
       const html = document.getElementById(currentQuestion._id).innerHTML;
       currentQuestion.passage = html;
-
 
       setNote("");
     }
@@ -1112,10 +1224,7 @@ function SatQuestion() {
   //   setCurrentQuestionIndex(0);
   // };
 
-  const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
-
-
-  
+  //const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
 
   return (
     <>
@@ -1222,7 +1331,7 @@ function SatQuestion() {
                               style={{ padding: "0px 20px" }}
                             >
                               <div className="col-4">
-                                Section {sectionType}, Module {moduleType} : 
+                                Section {sectionType}, Module {moduleType} :
                                 {sectionType === 1
                                   ? " Reading & Writing"
                                   : " Math"}
@@ -1230,13 +1339,25 @@ function SatQuestion() {
                                 <button onClick={toggleDirections}>
                                   {showDirections ? (
                                     // Display an arrow that points upwards when the popup is open
-                                    <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
+                                    <span
+                                      style={{
+                                        fontSize: "13px",
+                                        paddingTop: "10px",
+                                        display: "block",
+                                      }}
+                                    >
                                       Directions{" "}
                                       <i className="fa fa-angle-up"></i>
                                     </span>
                                   ) : (
                                     // Display an arrow that points downwards when the popup is closed
-                                    <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
+                                    <span
+                                      style={{
+                                        fontSize: "13px",
+                                        paddingTop: "10px",
+                                        display: "block",
+                                      }}
+                                    >
                                       Directions{" "}
                                       <i className="fa fa-angle-down"></i>
                                     </span>
@@ -1256,7 +1377,11 @@ function SatQuestion() {
                                 >
                                   {isTimerVisible ? (
                                     <CountdownTimer
-                                      initialTime={QUESTION_DURATON}
+                                      initialTime={
+                                        sectionType === 1
+                                          ? QUESTION_DURATON
+                                          : MQUESTION_DURATON
+                                      }
                                       onTimeIsUp={() => {
                                         setShowModalAnswer(true);
                                       }}
@@ -1264,22 +1389,32 @@ function SatQuestion() {
                                       isPauseInterval={isPauseTimer}
                                     />
                                   ) : (
-                                    <><div style={{
-                                      display: "none",
-                                    }}>
-                                            <CountdownTimer
-                                              initialTime={QUESTION_DURATON}
-                                              onTimeIsUp={() => {
-                                                setShowModalAnswer(true);
-                                              } }
-                                              questionTestId={questionTestId}
-                                              isPauseInterval={isPauseTimer} />
-                                          </div><i
-                                            className="fa fa-clock-o"
-                                            style={{
-                                              fontSize: "20px",
-                                            }}
-                                          ></i></>
+                                    <>
+                                      <div
+                                        style={{
+                                          display: "none",
+                                        }}
+                                      >
+                                        <CountdownTimer
+                                          initialTime={
+                                            sectionType === 1
+                                              ? QUESTION_DURATON
+                                              : MQUESTION_DURATON
+                                          }
+                                          onTimeIsUp={() => {
+                                            setShowModalAnswer(true);
+                                          }}
+                                          questionTestId={questionTestId}
+                                          isPauseInterval={isPauseTimer}
+                                        />
+                                      </div>
+                                      <i
+                                        className="fa fa-clock-o"
+                                        style={{
+                                          fontSize: "20px",
+                                        }}
+                                      ></i>
+                                    </>
                                   )}
                                 </div>
                                 <button
@@ -1310,9 +1445,11 @@ function SatQuestion() {
                                         Annotate
                                       </span>
                                       <div className="tooltip-text">
-                                           MAKE A SELECTION FIRST<br/>
-                                           Select some text, then<br/>
-                                           press annotate.
+                                        MAKE A SELECTION FIRST
+                                        <br />
+                                        Select some text, then
+                                        <br />
+                                        press annotate.
                                       </div>
                                     </button>
                                     <button
@@ -1329,16 +1466,25 @@ function SatQuestion() {
                                       </span>
                                     </button>
                                     {isMDropdownOpen && (
-                                      <div  className="dropdown-content">
+                                      <div className="dropdown-content">
                                         <button
-                                          onClick={() => setIsPauseTimer(!isPauseTimer)}
+                                          onClick={() =>
+                                            setIsPauseTimer(!isPauseTimer)
+                                          }
                                         >
-                                          <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
+                                          <i
+                                            className={
+                                              isPauseTimer
+                                                ? "fa fa-play"
+                                                : "fa fa-pause"
+                                            }
+                                          ></i>{" "}
+                                          {!isPauseTimer ? "Pause" : "Play"}
                                         </button>
                                         <br />
-                                        <a href="/practice_tests">
-                                        <i className="fa fa-times"></i> Exit
-                                        </a>
+                                        <button onClick={handleExit}>
+                                          <i className="fa fa-times"></i> Exit
+                                        </button>
                                       </div>
                                     )}
                                   </div>
@@ -1459,16 +1605,25 @@ function SatQuestion() {
                                       </span>
                                     </button>
                                     {isMDropdownOpen && (
-                                      <div  className="dropdown-content">
+                                      <div className="dropdown-content">
                                         <button
-                                          onClick={() => setIsPauseTimer(!isPauseTimer)}
+                                          onClick={() =>
+                                            setIsPauseTimer(!isPauseTimer)
+                                          }
                                         >
-                                          <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
+                                          <i
+                                            className={
+                                              isPauseTimer
+                                                ? "fa fa-play"
+                                                : "fa fa-pause"
+                                            }
+                                          ></i>{" "}
+                                          {!isPauseTimer ? "Pause" : "Play"}
                                         </button>
                                         <br />
-                                        <a href="/practice_tests">
-                                        <i className="fa fa-times"></i> Exit
-                                        </a>
+                                        <button onClick={handleExit}>
+                                          <i className="fa fa-times"></i> Exit
+                                        </button>
                                       </div>
                                     )}
                                   </div>
@@ -1479,7 +1634,9 @@ function SatQuestion() {
                           </div>
                           {!showModalAnswer ? (
                             <div
-                              className={`row ${isPauseTimer ? 'disabled' : ''}`}
+                              className={`row ${
+                                isPauseTimer ? "disabled" : ""
+                              }`}
                               style={{
                                 height: "100vh",
                                 marginTop: "100px",
@@ -1512,14 +1669,25 @@ function SatQuestion() {
                                         toggleColumnWidth("column1")
                                       }
                                     >
-                                      <img src='/images/lefticon.png' border='0'/>
-                                    </button> 
-                                    <div style={{marginRight:"20px"}}>
+                                      <img
+                                        src="/images/lefticon.png"
+                                        border="0"
+                                      />
+                                    </button>
+                                    <div style={{ marginRight: "20px" }}>
                                       {currentQuestion?.context !== "" && (
-                                        <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
+                                        <div
+                                          className="passage_test"
+                                          style={{
+                                            paddingBottom: "20px",
+                                            paddingRight: "20px",
+                                          }}
                                           dangerouslySetInnerHTML={{
                                             __html: he.decode(
-                                              currentQuestion?.context.replace("�", "&eacute;")
+                                              currentQuestion?.context?.replace(
+                                                "�",
+                                                "&eacute;"
+                                              )
                                             ),
                                           }}
                                         />
@@ -1533,11 +1701,19 @@ function SatQuestion() {
                                           />
                                         </div>
                                       )}
-                                      <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
+                                      <div
+                                        className="passage_test"
+                                        style={{
+                                          paddingBottom: "20px",
+                                          paddingRight: "20px",
+                                        }}
                                         id={currentQuestion._id}
                                         dangerouslySetInnerHTML={{
                                           __html: he.decode(
-                                            currentQuestion?.passage.replace("�", "&eacute;")
+                                            currentQuestion?.passage?.replace(
+                                              "�",
+                                              "&eacute;"
+                                            )
                                           ),
                                         }}
                                       />
@@ -1570,11 +1746,16 @@ function SatQuestion() {
                                         toggleColumnWidth("column2")
                                       }
                                     >
-                                      <img src='/images/righticon.png' border='0'/>
+                                      <img
+                                        src="/images/righticon.png"
+                                        border="0"
+                                      />
                                     </button>
                                   )}
-                                  <div className="row question_header" 
-                                  style={{ marginLeft: "3px"}}>
+                                  <div
+                                    className="row question_header"
+                                    style={{ marginLeft: "3px" }}
+                                  >
                                     <div className="question_no">
                                       {currentQuestionIndex + 1}{" "}
                                     </div>
@@ -1633,31 +1814,62 @@ function SatQuestion() {
                                     {currentQuestion?.equation && (
                                       <>
                                         <div>
-                                          <MathJaxContext version={3} config={config}> 
-                                              <MathJax inline dynamic hideUntilTypeset={"first"}>
-                                                <div dangerouslySetInnerHTML={{ __html: currentQuestion?.equation }} /> 
+                                          <MathJaxContext
+                                            version={3}
+                                            config={config}
+                                          >
+                                            <MathJax
+                                              inline
+                                              dynamic
+                                              hideUntilTypeset={"first"}
+                                            >
+                                              <div
+                                                dangerouslySetInnerHTML={{
+                                                  __html:
+                                                    currentQuestion?.equation,
+                                                }}
+                                              />
                                             </MathJax>
-                                          </MathJaxContext> 
+                                          </MathJaxContext>
                                         </div>
                                         <br />
                                       </>
-                                    )} 
+                                    )}
 
-                                      {currentQuestion?.question_type === "Math" ? (
-                                        <MathJaxContext version={3} config={config}> 
-                                          <MathJax inline dynamic hideUntilTypeset={"first"}>
-                                                <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} /> 
-                                            </MathJax>
-                                        </MathJaxContext>
-                                      ) : (
-                                        // Render something else if sectionModule is not 2
-                                        <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} /> 
-                                      )}
+                                    {currentQuestion?.question_type ===
+                                    "Math" ? (
+                                      <MathJaxContext
+                                        version={3}
+                                        config={config}
+                                      >
+                                        <MathJax
+                                          inline
+                                          dynamic
+                                          hideUntilTypeset={"first"}
+                                        >
+                                          <div
+                                            dangerouslySetInnerHTML={{
+                                              __html:
+                                                currentQuestion?.question_text,
+                                            }}
+                                          />
+                                        </MathJax>
+                                      </MathJaxContext>
+                                    ) : (
+                                      // Render something else if sectionModule is not 2
+                                      <div
+                                        dangerouslySetInnerHTML={{
+                                          __html:
+                                            currentQuestion?.question_text,
+                                        }}
+                                      />
+                                    )}
                                   </div>
 
                                   {sectionType === 2 &&
                                   currentQuestion?.question_type === "Math" &&
-                                  currentQuestion.isgridIn.toLowerCase() === "true" ? (
+                                  currentQuestion.isgridIn.toLowerCase() ===
+                                    "true" ? (
                                     <div style={{ fontSize: "20px" }}>
                                       <input
                                         type="text"
@@ -1694,7 +1906,10 @@ function SatQuestion() {
                                                   : ""
                                               } 
                                               ${
-                                                selectedAnswer === choiceKey && !currentQuestion?.strikeoptions?.includes(choiceKey)
+                                                selectedAnswer === choiceKey &&
+                                                !currentQuestion?.strikeoptions?.includes(
+                                                  choiceKey
+                                                )
                                                   ? "highlighted"
                                                   : ""
                                               }`}
@@ -1715,33 +1930,48 @@ function SatQuestion() {
                                                     )
                                                   }
                                                 />
-                                                <span className="letter">
+                                                <label className="letter">
                                                   {choiceKey}
-                                                </span>
+                                                </label>
                                               </label>
                                             </div>
                                             <div>
                                               {data.length >
                                                 currentQuestionIndex && (
                                                 <span>
-                                                  
-
-                                                      {currentQuestion?.question_type === "Math" ? (
-                                                        <MathJaxContext version={3} config={config}> 
-                                                          <MathJax inline dynamic hideUntilTypeset={"first"}>
-                                                              {
-                                                                currentQuestion[
-                                                                  `choice_${choiceKey?.toLowerCase()}`
-                                                                ]
-                                                              }
-                                                          </MathJax>
-                                                        </MathJaxContext>
-                                                      ) : ( 
-                                                        // Render something else if sectionModule is not 2
-                                                       <span><div dangerouslySetInnerHTML={{ __html: currentQuestion[
-                                                        `choice_${choiceKey?.toLowerCase()}`
-                                                      ] }} /> </span>
-                                                      )}
+                                                  {currentQuestion?.question_type ===
+                                                  "Math" ? (
+                                                    <MathJaxContext
+                                                      version={3}
+                                                      config={config}
+                                                    >
+                                                      <MathJax
+                                                        inline
+                                                        dynamic
+                                                        hideUntilTypeset={
+                                                          "first"
+                                                        }
+                                                      >
+                                                        {
+                                                          currentQuestion[
+                                                            `choice_${choiceKey?.toLowerCase()}`
+                                                          ]
+                                                        }
+                                                      </MathJax>
+                                                    </MathJaxContext>
+                                                  ) : (
+                                                    // Render something else if sectionModule is not 2
+                                                    <span>
+                                                      <div
+                                                        dangerouslySetInnerHTML={{
+                                                          __html:
+                                                            currentQuestion[
+                                                              `choice_${choiceKey?.toLowerCase()}`
+                                                            ],
+                                                        }}
+                                                      />{" "}
+                                                    </span>
+                                                  )}
                                                 </span>
                                               )}
                                             </div>
@@ -1806,7 +2036,11 @@ function SatQuestion() {
                             <></>
                           )}
 
-                          <div className={`row ${isPauseTimer ? 'disabled' : ''} fixed-footer`}>
+                          <div
+                            className={`row ${
+                              isPauseTimer ? "disabled" : ""
+                            } fixed-footer`}
+                          >
                             <hr className="dashed-border" />
                             <div
                               className="col-12"
@@ -1842,12 +2076,14 @@ function SatQuestion() {
                                 </div>
                               </div>
                               <div className="col-4 paginations">
-                                <button
-                                  onClick={handlePrevQuestion}
-                                  disabled={currentQuestionIndex === 0}
-                                >
-                                  Back
-                                </button>
+                                {currentQuestionIndex > 0 && (
+                                  <button
+                                    onClick={handlePrevQuestion}
+                                    disabled={currentQuestionIndex === 0}
+                                  >
+                                    Back
+                                  </button>
+                                )}
                                 <button onClick={handleNextQuestion}>
                                   {currentQuestionIndex === data.length - 1
                                     ? "Submit"
@@ -1858,44 +2094,38 @@ function SatQuestion() {
                           </div>
                         </div>
                       </div>
-                      
+
                       {showDirections && (
-                                  <div
-                                    className="backgroundFade"
-                                    id="backgroundFade"
-                                  >
-                                    <div className="popupContainer">
-                                      <div className="arrow-up"></div>
-                                      <div id="popupContent">
-                                        <div style={{ height: "320px" }}>
-                                          <p>
-                                            The questions in this section
-                                            address a number of important
-                                            reading and writing skills. Each
-                                            question includes one or more
-                                            passages, which may include a table
-                                            or graph. Read each passageand
-                                            question carefully, and then choose
-                                            the best answer to the question
-                                            based on the passage(s).
-                                          </p>
-                                          <p>
-                                            All questions in this section are
-                                            multiple-choice with four answer
-                                            choices. Each question has a single
-                                            best answer.
-                                          </p>
-                                        </div>
-                                        <button
-                                          className="directionClose"
-                                          onClick={toggleDirections}
-                                        >
-                                          Close
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
+                        <div className="backgroundFade" id="backgroundFade">
+                          <div className="popupContainer">
+                            <div className="arrow-up"></div>
+                            <div id="popupContent">
+                              <div style={{ height: "320px" }}>
+                                <p>
+                                  The questions in this section address a number
+                                  of important reading and writing skills. Each
+                                  question includes one or more passages, which
+                                  may include a table or graph. Read each
+                                  passageand question carefully, and then choose
+                                  the best answer to the question based on the
+                                  passage(s).
+                                </p>
+                                <p>
+                                  All questions in this section are
+                                  multiple-choice with four answer choices. Each
+                                  question has a single best answer.
+                                </p>
+                              </div>
+                              <button
+                                className="directionClose"
+                                onClick={toggleDirections}
+                              >
+                                Close
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       {showAnnotationBox && (
                         <div className="w-full h-[60%] fixed bottom-0 bg-gray-200">
                           <div className="flex justify-between bg-gray-900 text-white px-16 py-3">
@@ -1965,10 +2195,10 @@ function SatQuestion() {
                         </div>
                       )}
                       <Modal
-                      isOpen={isReportModalOpen}
-                      closeModal={closeReportModal}
-                      apiResponse={reportResponse}
-                    ></Modal>
+                        isOpen={isReportModalOpen}
+                        closeModal={closeReportModal}
+                        apiResponse={reportResponse}
+                      ></Modal>
                     </>
                   )}
                 </div>
