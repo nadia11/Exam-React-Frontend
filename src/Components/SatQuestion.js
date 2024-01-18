@@ -246,10 +246,11 @@ function ModalAnswers(props) {
     </>
   );
 }
-const fetchPendingQuestions = async (questionTestId) => {
+const fetchPendingQuestions = async (questionTestId,sectionType,moduleType) => {
+  console.log("section"+sectionType+"module"+moduleType);
   try {
     const response = await axios.get(
-      `${process.env.REACT_APP_BASE_URL}getPendingTest/${userid}/${questionTestId}`,
+      `${process.env.REACT_APP_BASE_URL}getPendingTest/${userid}/${questionTestId}/${sectionType}/${moduleType}`,
       {
         headers: {
           "content-type": "application/json",
@@ -264,10 +265,11 @@ const fetchPendingQuestions = async (questionTestId) => {
     console.error("Error fetching pending questions:", error);
   }
 };
-const getSatQuestionsByQuestionTestId = async (questionTestId) => {
+const getSatQuestionsByQuestionTestId = async (questionTestId,sectionType,moduleType) => {
+    console.log("section"+sectionType+"module"+moduleType);
   let testData = null;
   try {
-    testData = await fetchPendingQuestions(questionTestId);
+    testData = await fetchPendingQuestions(questionTestId,sectionType,moduleType);
     return testData || null;
   } catch (error) {
     return null;
@@ -401,17 +403,25 @@ function SatQuestion() {
   };
 
   useEffect(() => {
+    console.log(sectionType.moduleType);
     const getData = async () => {
       const questionData = await getSatQuestionsByQuestionTestId(
-        questionTestId
+        questionTestId,sectionType,moduleType
       );
-
+console.log("QD"+questionData);
       if (questionData) {
         setCurrentSatQuestions(questionData);
         setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
         setShowStrike(questionData.isShowStrike || false);
         setModuleType(questionData?.currentModuleType || 1);
         setSectionType(questionData?.currentSectionType || 1);
+      }
+      else{
+         //setCurrentSatQuestions(questionData);
+        setCurrentQuestionIndex(0);
+        setShowStrike(false);
+        setModuleType(1);
+        setSectionType(1);
       }
     };
 
@@ -722,7 +732,7 @@ function SatQuestion() {
 
   const goToReviewPage = () => {
     setShowModalAnswer(true);
-    setCurrentQuestionIndex(data.length - 1);
+    setCurrentQuestionIndex(data?.length - 1);
   };
 
   const getQuestions = async (
@@ -732,8 +742,12 @@ function SatQuestion() {
   ) => {
       let testData = null;
   try {
-    testData = await fetchPendingQuestions(questionTestId);
+    testData = await fetchPendingQuestions(questionTestId,sectionType,moduleType);
+    if(testData)
      setData(testData.answers);
+    else
+    setData([]);
+     setLoading(false);
     return testData.answers || null;
   } catch (error) {
     return null;
@@ -781,8 +795,9 @@ function SatQuestion() {
   }
   <i></i>;
 
-  const currentQuestion = data[currentQuestionIndex];
-  if (data.length === 0) {
+  const currentQuestion = data?.[currentQuestionIndex];
+  if (data?.length === 0) {
+    console.log("data"+data)
     return (
       <ModuleFinish
         onTimeIsUp={() => {
@@ -910,20 +925,6 @@ function SatQuestion() {
 
     setData(currentData);
 
-    /*const updatedData = data.map((question) => ({
-      ...question,
-      currentQuestion,
-    }));
-    setData(updatedData);
-
-    const sat_questions = {
-      [questionTestId]: {
-        ...currentSatQuestions,
-        answers: updatedData,
-      },
-    };
-
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));*/
   };
   const rhandleStrikeout = (choiceKey) => {
     // Set isStrikedOut to false
