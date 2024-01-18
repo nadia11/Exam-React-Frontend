@@ -6,13 +6,11 @@ import React, { useEffect, useState } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import DesmosCalculator from "../Components/DesmosCalculator";
 import CountdownTimer from "./CountdownTimer";
-import Modal from "../Components/SatTest/Modal";
+import Modal from "../Components/SatTest/Modal"; 
 import { MathJax, MathJaxContext } from "better-react-mathjax";
-
 const first_name = localStorage.getItem("first_name");
 const last_name = localStorage.getItem("last_name");
 const userid = localStorage.getItem("userid");
-
 const LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX =
   "LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX".toLowerCase();
 
@@ -97,7 +95,9 @@ function QuestionModal({
           <div style={{ float: "left", width: "90%" }}>
             <h2>
               Section {section}, Module {module}:{" "}
-              {section === 1 ? " Reading & Writing" : " Math"}
+              {section === 1
+                ? " Reading & Writing"
+                : " Math"}
             </h2>
           </div>
           <div style={{ float: "right", width: "10%" }}>
@@ -145,19 +145,14 @@ function QuestionModal({
 }
 
 function ModalAnswers(props) {
-  useEffect(
-    () => {
-      if (props.show) {
-        // save answer test here
-        saveAnswerTest();
-      }
-    },
-    [props.data, props.show],
-    props.test_id
-  );
+  useEffect(() => { 
+    if (props.show) {
+      // save answer test here
+      saveAnswerTest();
+    }
+  }, [props.data, props.show], props.test_id);
 
   const saveAnswerTest = async () => {
-    //  console.log(props.data);
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}saveanswertest`,
@@ -167,7 +162,7 @@ function ModalAnswers(props) {
           section_type: props.sectionType,
           answers: props.data,
           score: props.score,
-          userid: userid,
+          userid: userid
         },
         {
           headers: {
@@ -182,8 +177,9 @@ function ModalAnswers(props) {
     } catch (error) {
       console.error("Error saving answers:", error);
     }
-  };
+  };  
 
+  
   return (
     <>
       <div style={{ textAlign: "center", paddingTop: "30px" }}>
@@ -246,31 +242,13 @@ function ModalAnswers(props) {
     </>
   );
 }
-const fetchPendingQuestions = async (questionTestId,sectionType,moduleType) => {
-  console.log("section"+sectionType+"module"+moduleType);
+
+const getSatQuestionsByQuestionTestId = (questionTestId) => {
   try {
-    const response = await axios.get(
-      `${process.env.REACT_APP_BASE_URL}getPendingTest/${userid}/${questionTestId}/${sectionType}/${moduleType}`,
-      {
-        headers: {
-          "content-type": "application/json",
-          token: localStorage.getItem("token"),
-        },
-      }
+    return (
+      JSON.parse(localStorage.getItem("sat_questions"))?.[questionTestId] ||
+      null
     );
-    if (response.status >= 200 && response.status < 300) {
-      return response.data.data.data;
-    }
-  } catch (error) {
-    console.error("Error fetching pending questions:", error);
-  }
-};
-const getSatQuestionsByQuestionTestId = async (questionTestId,sectionType,moduleType) => {
-    console.log("section"+sectionType+"module"+moduleType);
-  let testData = null;
-  try {
-    testData = await fetchPendingQuestions(questionTestId,sectionType,moduleType);
-    return testData || null;
   } catch (error) {
     return null;
   }
@@ -278,74 +256,38 @@ const getSatQuestionsByQuestionTestId = async (questionTestId,sectionType,module
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 3200) / 100;
-const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
+const QUESTION_DURATON = (1 * 60 * 3000) / 100; // 30 minutes in miliseconds
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
-  const [mountTime, setMountTime] = useState(null);
-  const [buttonClickTime, setButtonClickTime] = useState(null);
-
   const { id: questionTestId = null } = useParams();
 
+  const currentSatQuestions = getSatQuestionsByQuestionTestId(questionTestId);
+
   const [data, setData] = useState([]);
-  useEffect(() => {
-    const currentTime = new Date();
-    setMountTime(currentTime);
-  }, [buttonClickTime]);
-
-  const savePendingTest = async (sat_questions) => {
-   // const currentStorage = JSON.parse(sat_questions);
-    const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}savePendingTest`,
-        {
-          answers: currentQuestionObj.answers,
-          userid: userid,
-          testid: Object.keys(sat_questions)[0],
-          submitted: false,
-          currentSectionType: currentQuestionObj.currentSectionType,
-          currentModuleType: currentQuestionObj.currentModuleType,
-          sat_questions: sat_questions,
-          currentQuestionIndex: currentQuestionObj.currentQuestionIndex,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            token: localStorage.getItem("token"),
-          },
-        }
-      );
-      if (response.status === 201) {
-        // navigate(`/practice_tests`);
-        console.log("success save pending answer for this module.");
-      }
-    } catch (error) {
-      console.error("Error saving pending answers:", error);
-    }
-  };
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
+    currentSatQuestions?.currentQuestionIndex || 0
+  );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [showGap, setShowGap] = useState(false); // State to manage the gap display
-  const [showStrike, setShowStrike] = useState(false); // State to manage the gap display
-  const [currentSatQuestions, setCurrentSatQuestions] = useState({
-    currentQuestionIndex: 0,
-    isShowStrike: false,
-    currentModuleType: 1,
-    currentSectionType: 1,
-  });
+  const [showStrike, setShowStrike] = useState(
+    currentSatQuestions?.isShowStrike || false
+  ); // State to manage the gap display
 
   const [showModalAnswer, setShowModalAnswer] = useState(false);
-  const [moduleType, setModuleType] = useState(1);
-  const [sectionType, setSectionType] = useState(1);
+  const [moduleType, setModuleType] = useState(
+    currentSatQuestions?.currentModuleType || 1
+  );
+  const [sectionType, setSectionType] = useState(
+    currentSatQuestions?.currentSectionType || 1
+  );
   const [loading, setLoading] = useState(false);
   const [accumulatedData, setAccumulatedData] = useState([]);
   const [isTimerVisible, setIsTimerVisible] = useState(true);
   const [isPauseTimer, setIsPauseTimer] = useState(false);
 
+  
   const [isMDropdownOpen, setIsMDropdownOpen] = useState(false);
 
   const handleMoreClick = () => {
@@ -402,38 +344,13 @@ function SatQuestion() {
     setIsReferenceVisible(false);
   };
 
-  useEffect(() => {
-    console.log(sectionType.moduleType);
-    const getData = async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(
-        questionTestId,sectionType,moduleType
-      );
-console.log("QD"+questionData);
-      if (questionData) {
-        setCurrentSatQuestions(questionData);
-        setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
-        setShowStrike(questionData.isShowStrike || false);
-        setModuleType(questionData?.currentModuleType || 1);
-        setSectionType(questionData?.currentSectionType || 1);
-      }
-      else{
-         //setCurrentSatQuestions(questionData);
-        setCurrentQuestionIndex(0);
-        setShowStrike(false);
-        setModuleType(1);
-        setSectionType(1);
-      }
-    };
-
-    getData();
-  }, []);
-
   // useEffect(() => {
   //   localStorage.setItem(
   //     LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX,
   //     JSON.stringify({ [questionTestId]: currentQuestionIndex })
   //   );
   // }, [currentQuestionIndex, questionTestId]);
+
 
   // const sentence = "asd qwe zxc rty fgh 123";
   // const wordToHighlight = "123";
@@ -455,12 +372,12 @@ console.log("QD"+questionData);
   //   sentence,
   //   wordToHighlight,
   //   highlightColor
-  // );
+  // ); 
   useEffect(() => {
-    (async () => {
+    (async () => { 
       const currentQuestion = data?.[currentQuestionIndex];
-      //console.log(annotations);
-
+      console.log(annotations);
+      
       setSelectedAnswer(currentQuestion?.selected_answer);
       setAnswertext(currentQuestion?.selected_answer);
     })();
@@ -472,22 +389,25 @@ console.log("QD"+questionData);
     })();
   }, [moduleType, sectionType]);
 
-  // useEffect(() => {
-  //   // {
-  //   //   bottom: 347,
-  //   //   height: 16,
-  //   //   left: 1058.0859375,
-  //   //   right: 1196.640625,
-  //   //   top: 331;
-  //   //   width: 138.5546875,
-  //   //   x: 1058.0859375,
-  //   //   y: 331,
-  //   // test.getAttribute("style", "color:green");
-  //   // test.textContent = toDOM(currentSatQuestions?.parentEl)
-  // }, [currentSatQuestions?.range]);
+  useEffect(() => {
+    // {
+    //   bottom: 347,
+    //   height: 16,
+    //   left: 1058.0859375,
+    //   right: 1196.640625,
+    //   top: 331;
+    //   width: 138.5546875,
+    //   x: 1058.0859375,
+    //   y: 331,
+    // test.getAttribute("style", "color:green");
+    // test.textContent = toDOM(currentSatQuestions?.parentEl)
+  }, [currentSatQuestions?.range]);
+
+ 
 
   const handleOptionClick = (answerIndex) => {
-    // console.log('answerIndex',answerIndex)
+
+    console.log('answerIndex',answerIndex)
     rhandleStrikeout(answerIndex);
     setSelectedAnswer(answerIndex);
 
@@ -511,7 +431,7 @@ console.log("QD"+questionData);
   };
 
   const handleAnswerSelect = (answerIndex) => {
-    console.log("s");
+    console.log('s')
     setSelectedAnswer(answerIndex);
 
     // Update the score based on the correct answer
@@ -584,10 +504,8 @@ console.log("QD"+questionData);
   };
 
   const handleNextQuestion = () => {
-    // Update selected answer for the current question
-    const currentTime = new Date();
-    setButtonClickTime(currentTime);
 
+    // Update selected answer for the current question
     const currentData = [...data];
 
     const isInput =
@@ -597,13 +515,6 @@ console.log("QD"+questionData);
       ...currentData?.[currentQuestionIndex],
       selected_answer: isInput ? answertext : selectedAnswer,
     });
-    if (mountTime) {
-      const difference = (currentTime - mountTime) / 1000;
-      Object.assign(currentData[currentQuestionIndex], {
-        ...currentData?.[currentQuestionIndex],
-        duration: difference,
-      });
-    }
     setData(currentData);
     if (showModalAnswer && currentQuestionIndex === data?.length - 1) {
       handleContinue();
@@ -629,8 +540,7 @@ console.log("QD"+questionData);
       },
     };
 
-   // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest(sat_questions);
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions)); 
   };
 
   const handlePrevQuestion = () => {
@@ -660,17 +570,18 @@ console.log("QD"+questionData);
       },
     };
 
-    //localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest(sat_questions);
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions)); 
   };
 
   const [showModal, setShowModal] = useState(false);
 
   const [showDirections, setShowDirections] = useState(true);
 
+  
+
   const [selectedTestId, setSelectedTestId] = useState(null);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportResponse, setReportResponse] = useState(null);
+  const [reportResponse, setReportResponse] = useState(null); 
   const navigate = useNavigate();
   // ... Other functions and code ...
 
@@ -732,72 +643,56 @@ console.log("QD"+questionData);
 
   const goToReviewPage = () => {
     setShowModalAnswer(true);
-    setCurrentQuestionIndex(data?.length - 1);
+    setCurrentQuestionIndex(data.length - 1);
   };
 
-  const getQuestions = async (
-    test_id = questionTestId,
-    module_type = 1,
-    section_type = 1
-  ) => {
-      let testData = null;
-  try {
-    testData = await fetchPendingQuestions(questionTestId,sectionType,moduleType);
-    if(testData)
-     setData(testData.answers);
-    else
-    setData([]);
-     setLoading(false);
-    return testData.answers || null;
-  } catch (error) {
-    return null;
-  }
-    // try {
-    //   setLoading(true);
-    //   const response = await axios.get(
-    //     `${process.env.REACT_APP_BASE_URL}getallquestions`,
-    //     {
-    //       params: {
-    //         test_id,
-    //         module_type,
-    //         section_type,
-    //       },
-    //     }
-    //   );
-    //   if (response.status === 200) {
-    //     const questions = response?.data || [];
-    //     if (currentSatQuestions?.answers?.length) {
-    //       const newQuestions = questions?.map((q) => {
-    //         const question = currentSatQuestions?.answers?.find(
-    //           (curr) => curr?._id === q?._id
-    //         );
-    //         return {
-    //           ...q,
-    //           selected_answer: question?.selected_answer || "",
-    //           bookmarked: question?.bookmarked || false,
-    //           strikeoptions: question?.strikeoptions || [],
-    //         };
-    //       });
-    //       setData(newQuestions);
-    //     } else {
-    //       setData(questions);
-    //     }
-    //   }
-    //   setLoading(false);
-    // } catch (error) {
-    //   setLoading(false);
-    //   console.error("Error fetching questions:", error);
-    // }
+  const getQuestions = async (test_id = questionTestId, module_type = 1, section_type = 1) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}getallquestions`,
+        {
+          params: {
+            test_id,
+            module_type,
+            section_type,
+          },
+        }
+      );
+      if (response.status === 200) {
+        const questions = response?.data || [];
+        if (currentSatQuestions?.answers?.length) {
+          const newQuestions = questions?.map((q) => {
+            const question = currentSatQuestions?.answers?.find(
+              (curr) => curr?._id === q?._id
+            );
+            return {
+              ...q,
+              selected_answer: question?.selected_answer || "",
+              bookmarked: question?.bookmarked || false,
+              strikeoptions: question?.strikeoptions || [],
+            };
+          });
+          setData(newQuestions);
+        } else {
+          setData(questions);
+        }
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Error fetching questions:", error);
+    }
   };
 
   if (loading) {
     return <div>Loading...</div>;
   }
-  <i></i>;
+  <i></i>
 
-  const currentQuestion = data?.[currentQuestionIndex];
-  if (data?.length === 0) {
-    console.log("data"+data)
+  const currentQuestion = data[currentQuestionIndex];
+
+  if (data.length === 0) {
     return (
       <ModuleFinish
         onTimeIsUp={() => {
@@ -833,10 +728,6 @@ console.log("QD"+questionData);
     pdf.save("SAT_Questions_Answers.pdf");
   };
 
-  const handleExit = () => {
-   // savePendingTest();
-    navigate(`/practice_tests`);
-  };
   const refetchQuestions = async () => {
     if (moduleType === 1 && sectionType === 1) {
       setModuleType(moduleType + 1);
@@ -883,23 +774,23 @@ console.log("QD"+questionData);
       packages: { "[+]": ["html"] },
       inlineMath: [
         ["$", "$"],
-        ["\\(", "\\)"],
+        ["\\(", "\\)"]
       ],
       displayMath: [
         ["$$", "$$"],
-        ["\\[", "\\]"],
+        ["\\[", "\\]"]
       ],
       chtml: {
         minScale: 1.22,
       },
       options: {
         processHtml: true, // Enable processing of HTML tags
-      },
-    },
+      }
+    }
   };
 
   const handleStrikeout = (choiceKey) => {
-    console.log("sdfdsf");
+    console.log("sdfdsf")
     setIsStrikedOut(!isStrikedOut);
     // Update the score based on the correct answer
     const currentData = [...data];
@@ -914,39 +805,53 @@ console.log("QD"+questionData);
     }
 
     // Update the data with the selected answer
-    Object.assign(currentData[currentQuestionIndex], {
+   Object.assign(currentData[currentQuestionIndex], {
       ...currentQuestion,
       strikeoptions: strikeoptions,
     });
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove("highlighted");
+      element.classList.remove('highlighted');
     }
 
     setData(currentData);
 
+     /*const updatedData = data.map((question) => ({
+      ...question,
+      currentQuestion,
+    }));
+    setData(updatedData);
+
+    const sat_questions = {
+      [questionTestId]: {
+        ...currentSatQuestions,
+        answers: updatedData,
+      },
+    };
+
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));*/
   };
   const rhandleStrikeout = (choiceKey) => {
     // Set isStrikedOut to false
     setIsStrikedOut(false);
-
+  
     // Update the score based on the correct answer
     const currentData = [...data];
     const currentQuestion = currentData[currentQuestionIndex];
-
+  
     let strikeoptions = [...(currentQuestion.strikeoptions ?? [])];
 
     strikeoptions = strikeoptions.filter((option) => option !== choiceKey);
-
+  
     // Update the data with the selected answer
     Object.assign(currentData[currentQuestionIndex], {
       ...currentQuestion,
       strikeoptions: strikeoptions,
     });
-
+  
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove("highlighted");
+      element.classList.remove('highlighted');
     }
     // Update the state or any other necessary logic based on the updated data
     setData(currentData);
@@ -1096,6 +1001,7 @@ console.log("QD"+questionData);
       const html = document.getElementById(currentQuestion._id).innerHTML;
       currentQuestion.passage = html;
 
+
       setNote("");
     }
 
@@ -1206,7 +1112,10 @@ console.log("QD"+questionData);
   //   setCurrentQuestionIndex(0);
   // };
 
-  //const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
+  const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
+
+
+  
 
   return (
     <>
@@ -1313,7 +1222,7 @@ console.log("QD"+questionData);
                               style={{ padding: "0px 20px" }}
                             >
                               <div className="col-4">
-                                Section {sectionType}, Module {moduleType} :
+                                Section {sectionType}, Module {moduleType} : 
                                 {sectionType === 1
                                   ? " Reading & Writing"
                                   : " Math"}
@@ -1321,25 +1230,13 @@ console.log("QD"+questionData);
                                 <button onClick={toggleDirections}>
                                   {showDirections ? (
                                     // Display an arrow that points upwards when the popup is open
-                                    <span
-                                      style={{
-                                        fontSize: "13px",
-                                        paddingTop: "10px",
-                                        display: "block",
-                                      }}
-                                    >
+                                    <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
                                       Directions{" "}
                                       <i className="fa fa-angle-up"></i>
                                     </span>
                                   ) : (
                                     // Display an arrow that points downwards when the popup is closed
-                                    <span
-                                      style={{
-                                        fontSize: "13px",
-                                        paddingTop: "10px",
-                                        display: "block",
-                                      }}
-                                    >
+                                    <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
                                       Directions{" "}
                                       <i className="fa fa-angle-down"></i>
                                     </span>
@@ -1359,11 +1256,7 @@ console.log("QD"+questionData);
                                 >
                                   {isTimerVisible ? (
                                     <CountdownTimer
-                                      initialTime={
-                                        sectionType === 1
-                                          ? QUESTION_DURATON
-                                          : MQUESTION_DURATON
-                                      }
+                                      initialTime={QUESTION_DURATON}
                                       onTimeIsUp={() => {
                                         setShowModalAnswer(true);
                                       }}
@@ -1371,32 +1264,22 @@ console.log("QD"+questionData);
                                       isPauseInterval={isPauseTimer}
                                     />
                                   ) : (
-                                    <>
-                                      <div
-                                        style={{
-                                          display: "none",
-                                        }}
-                                      >
-                                        <CountdownTimer
-                                          initialTime={
-                                            sectionType === 1
-                                              ? QUESTION_DURATON
-                                              : MQUESTION_DURATON
-                                          }
-                                          onTimeIsUp={() => {
-                                            setShowModalAnswer(true);
-                                          }}
-                                          questionTestId={questionTestId}
-                                          isPauseInterval={isPauseTimer}
-                                        />
-                                      </div>
-                                      <i
-                                        className="fa fa-clock-o"
-                                        style={{
-                                          fontSize: "20px",
-                                        }}
-                                      ></i>
-                                    </>
+                                    <><div style={{
+                                      display: "none",
+                                    }}>
+                                            <CountdownTimer
+                                              initialTime={QUESTION_DURATON}
+                                              onTimeIsUp={() => {
+                                                setShowModalAnswer(true);
+                                              } }
+                                              questionTestId={questionTestId}
+                                              isPauseInterval={isPauseTimer} />
+                                          </div><i
+                                            className="fa fa-clock-o"
+                                            style={{
+                                              fontSize: "20px",
+                                            }}
+                                          ></i></>
                                   )}
                                 </div>
                                 <button
@@ -1427,11 +1310,9 @@ console.log("QD"+questionData);
                                         Annotate
                                       </span>
                                       <div className="tooltip-text">
-                                        MAKE A SELECTION FIRST
-                                        <br />
-                                        Select some text, then
-                                        <br />
-                                        press annotate.
+                                           MAKE A SELECTION FIRST<br/>
+                                           Select some text, then<br/>
+                                           press annotate.
                                       </div>
                                     </button>
                                     <button
@@ -1448,25 +1329,16 @@ console.log("QD"+questionData);
                                       </span>
                                     </button>
                                     {isMDropdownOpen && (
-                                      <div className="dropdown-content">
+                                      <div  className="dropdown-content">
                                         <button
-                                          onClick={() =>
-                                            setIsPauseTimer(!isPauseTimer)
-                                          }
+                                          onClick={() => setIsPauseTimer(!isPauseTimer)}
                                         >
-                                          <i
-                                            className={
-                                              isPauseTimer
-                                                ? "fa fa-play"
-                                                : "fa fa-pause"
-                                            }
-                                          ></i>{" "}
-                                          {!isPauseTimer ? "Pause" : "Play"}
+                                          <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
                                         </button>
                                         <br />
-                                        <button onClick={handleExit}>
-                                          <i className="fa fa-times"></i> Exit
-                                        </button>
+                                        <a href="/practice_tests">
+                                        <i className="fa fa-times"></i> Exit
+                                        </a>
                                       </div>
                                     )}
                                   </div>
@@ -1587,25 +1459,16 @@ console.log("QD"+questionData);
                                       </span>
                                     </button>
                                     {isMDropdownOpen && (
-                                      <div className="dropdown-content">
+                                      <div  className="dropdown-content">
                                         <button
-                                          onClick={() =>
-                                            setIsPauseTimer(!isPauseTimer)
-                                          }
+                                          onClick={() => setIsPauseTimer(!isPauseTimer)}
                                         >
-                                          <i
-                                            className={
-                                              isPauseTimer
-                                                ? "fa fa-play"
-                                                : "fa fa-pause"
-                                            }
-                                          ></i>{" "}
-                                          {!isPauseTimer ? "Pause" : "Play"}
+                                          <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
                                         </button>
                                         <br />
-                                        <button onClick={handleExit}>
-                                          <i className="fa fa-times"></i> Exit
-                                        </button>
+                                        <a href="/practice_tests">
+                                        <i className="fa fa-times"></i> Exit
+                                        </a>
                                       </div>
                                     )}
                                   </div>
@@ -1616,9 +1479,7 @@ console.log("QD"+questionData);
                           </div>
                           {!showModalAnswer ? (
                             <div
-                              className={`row ${
-                                isPauseTimer ? "disabled" : ""
-                              }`}
+                              className={`row ${isPauseTimer ? 'disabled' : ''}`}
                               style={{
                                 height: "100vh",
                                 marginTop: "100px",
@@ -1651,25 +1512,14 @@ console.log("QD"+questionData);
                                         toggleColumnWidth("column1")
                                       }
                                     >
-                                      <img
-                                        src="/images/lefticon.png"
-                                        border="0"
-                                      />
-                                    </button>
-                                    <div style={{ marginRight: "20px" }}>
+                                      <img src='/images/lefticon.png' border='0'/>
+                                    </button> 
+                                    <div style={{marginRight:"20px"}}>
                                       {currentQuestion?.context !== "" && (
-                                        <div
-                                          className="passage_test"
-                                          style={{
-                                            paddingBottom: "20px",
-                                            paddingRight: "20px",
-                                          }}
+                                        <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
                                           dangerouslySetInnerHTML={{
                                             __html: he.decode(
-                                              currentQuestion?.context?.replace(
-                                                "�",
-                                                "&eacute;"
-                                              )
+                                              currentQuestion?.context.replace("�", "&eacute;")
                                             ),
                                           }}
                                         />
@@ -1683,19 +1533,11 @@ console.log("QD"+questionData);
                                           />
                                         </div>
                                       )}
-                                      <div
-                                        className="passage_test"
-                                        style={{
-                                          paddingBottom: "20px",
-                                          paddingRight: "20px",
-                                        }}
+                                      <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
                                         id={currentQuestion._id}
                                         dangerouslySetInnerHTML={{
                                           __html: he.decode(
-                                            currentQuestion?.passage?.replace(
-                                              "�",
-                                              "&eacute;"
-                                            )
+                                            currentQuestion?.passage.replace("�", "&eacute;")
                                           ),
                                         }}
                                       />
@@ -1728,16 +1570,11 @@ console.log("QD"+questionData);
                                         toggleColumnWidth("column2")
                                       }
                                     >
-                                      <img
-                                        src="/images/righticon.png"
-                                        border="0"
-                                      />
+                                      <img src='/images/righticon.png' border='0'/>
                                     </button>
                                   )}
-                                  <div
-                                    className="row question_header"
-                                    style={{ marginLeft: "3px" }}
-                                  >
+                                  <div className="row question_header" 
+                                  style={{ marginLeft: "3px"}}>
                                     <div className="question_no">
                                       {currentQuestionIndex + 1}{" "}
                                     </div>
@@ -1796,62 +1633,31 @@ console.log("QD"+questionData);
                                     {currentQuestion?.equation && (
                                       <>
                                         <div>
-                                          <MathJaxContext
-                                            version={3}
-                                            config={config}
-                                          >
-                                            <MathJax
-                                              inline
-                                              dynamic
-                                              hideUntilTypeset={"first"}
-                                            >
-                                              <div
-                                                dangerouslySetInnerHTML={{
-                                                  __html:
-                                                    currentQuestion?.equation,
-                                                }}
-                                              />
+                                          <MathJaxContext version={3} config={config}> 
+                                              <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                <div dangerouslySetInnerHTML={{ __html: currentQuestion?.equation }} /> 
                                             </MathJax>
-                                          </MathJaxContext>
+                                          </MathJaxContext> 
                                         </div>
                                         <br />
                                       </>
-                                    )}
+                                    )} 
 
-                                    {currentQuestion?.question_type ===
-                                    "Math" ? (
-                                      <MathJaxContext
-                                        version={3}
-                                        config={config}
-                                      >
-                                        <MathJax
-                                          inline
-                                          dynamic
-                                          hideUntilTypeset={"first"}
-                                        >
-                                          <div
-                                            dangerouslySetInnerHTML={{
-                                              __html:
-                                                currentQuestion?.question_text,
-                                            }}
-                                          />
-                                        </MathJax>
-                                      </MathJaxContext>
-                                    ) : (
-                                      // Render something else if sectionModule is not 2
-                                      <div
-                                        dangerouslySetInnerHTML={{
-                                          __html:
-                                            currentQuestion?.question_text,
-                                        }}
-                                      />
-                                    )}
+                                      {currentQuestion?.question_type === "Math" ? (
+                                        <MathJaxContext version={3} config={config}> 
+                                          <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} /> 
+                                            </MathJax>
+                                        </MathJaxContext>
+                                      ) : (
+                                        // Render something else if sectionModule is not 2
+                                        <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} /> 
+                                      )}
                                   </div>
 
                                   {sectionType === 2 &&
                                   currentQuestion?.question_type === "Math" &&
-                                  currentQuestion.isgridIn.toLowerCase() ===
-                                    "true" ? (
+                                  currentQuestion.isgridIn.toLowerCase() === "true" ? (
                                     <div style={{ fontSize: "20px" }}>
                                       <input
                                         type="text"
@@ -1888,10 +1694,7 @@ console.log("QD"+questionData);
                                                   : ""
                                               } 
                                               ${
-                                                selectedAnswer === choiceKey &&
-                                                !currentQuestion?.strikeoptions?.includes(
-                                                  choiceKey
-                                                )
+                                                selectedAnswer === choiceKey && !currentQuestion?.strikeoptions?.includes(choiceKey)
                                                   ? "highlighted"
                                                   : ""
                                               }`}
@@ -1912,48 +1715,33 @@ console.log("QD"+questionData);
                                                     )
                                                   }
                                                 />
-                                                <label className="letter">
+                                                <span className="letter">
                                                   {choiceKey}
-                                                </label>
+                                                </span>
                                               </label>
                                             </div>
                                             <div>
                                               {data.length >
                                                 currentQuestionIndex && (
                                                 <span>
-                                                  {currentQuestion?.question_type ===
-                                                  "Math" ? (
-                                                    <MathJaxContext
-                                                      version={3}
-                                                      config={config}
-                                                    >
-                                                      <MathJax
-                                                        inline
-                                                        dynamic
-                                                        hideUntilTypeset={
-                                                          "first"
-                                                        }
-                                                      >
-                                                        {
-                                                          currentQuestion[
-                                                            `choice_${choiceKey?.toLowerCase()}`
-                                                          ]
-                                                        }
-                                                      </MathJax>
-                                                    </MathJaxContext>
-                                                  ) : (
-                                                    // Render something else if sectionModule is not 2
-                                                    <span>
-                                                      <div
-                                                        dangerouslySetInnerHTML={{
-                                                          __html:
-                                                            currentQuestion[
-                                                              `choice_${choiceKey?.toLowerCase()}`
-                                                            ],
-                                                        }}
-                                                      />{" "}
-                                                    </span>
-                                                  )}
+                                                  
+
+                                                      {currentQuestion?.question_type === "Math" ? (
+                                                        <MathJaxContext version={3} config={config}> 
+                                                          <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                              {
+                                                                currentQuestion[
+                                                                  `choice_${choiceKey?.toLowerCase()}`
+                                                                ]
+                                                              }
+                                                          </MathJax>
+                                                        </MathJaxContext>
+                                                      ) : ( 
+                                                        // Render something else if sectionModule is not 2
+                                                       <span><div dangerouslySetInnerHTML={{ __html: currentQuestion[
+                                                        `choice_${choiceKey?.toLowerCase()}`
+                                                      ] }} /> </span>
+                                                      )}
                                                 </span>
                                               )}
                                             </div>
@@ -2018,11 +1806,7 @@ console.log("QD"+questionData);
                             <></>
                           )}
 
-                          <div
-                            className={`row ${
-                              isPauseTimer ? "disabled" : ""
-                            } fixed-footer`}
-                          >
+                          <div className={`row ${isPauseTimer ? 'disabled' : ''} fixed-footer`}>
                             <hr className="dashed-border" />
                             <div
                               className="col-12"
@@ -2058,14 +1842,12 @@ console.log("QD"+questionData);
                                 </div>
                               </div>
                               <div className="col-4 paginations">
-                                {currentQuestionIndex > 0 && (
-                                  <button
-                                    onClick={handlePrevQuestion}
-                                    disabled={currentQuestionIndex === 0}
-                                  >
-                                    Back
-                                  </button>
-                                )}
+                                <button
+                                  onClick={handlePrevQuestion}
+                                  disabled={currentQuestionIndex === 0}
+                                >
+                                  Back
+                                </button>
                                 <button onClick={handleNextQuestion}>
                                   {currentQuestionIndex === data.length - 1
                                     ? "Submit"
@@ -2076,38 +1858,44 @@ console.log("QD"+questionData);
                           </div>
                         </div>
                       </div>
-
+                      
                       {showDirections && (
-                        <div className="backgroundFade" id="backgroundFade">
-                          <div className="popupContainer">
-                            <div className="arrow-up"></div>
-                            <div id="popupContent">
-                              <div style={{ height: "320px" }}>
-                                <p>
-                                  The questions in this section address a number
-                                  of important reading and writing skills. Each
-                                  question includes one or more passages, which
-                                  may include a table or graph. Read each
-                                  passageand question carefully, and then choose
-                                  the best answer to the question based on the
-                                  passage(s).
-                                </p>
-                                <p>
-                                  All questions in this section are
-                                  multiple-choice with four answer choices. Each
-                                  question has a single best answer.
-                                </p>
-                              </div>
-                              <button
-                                className="directionClose"
-                                onClick={toggleDirections}
-                              >
-                                Close
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                                  <div
+                                    className="backgroundFade"
+                                    id="backgroundFade"
+                                  >
+                                    <div className="popupContainer">
+                                      <div className="arrow-up"></div>
+                                      <div id="popupContent">
+                                        <div style={{ height: "320px" }}>
+                                          <p>
+                                            The questions in this section
+                                            address a number of important
+                                            reading and writing skills. Each
+                                            question includes one or more
+                                            passages, which may include a table
+                                            or graph. Read each passageand
+                                            question carefully, and then choose
+                                            the best answer to the question
+                                            based on the passage(s).
+                                          </p>
+                                          <p>
+                                            All questions in this section are
+                                            multiple-choice with four answer
+                                            choices. Each question has a single
+                                            best answer.
+                                          </p>
+                                        </div>
+                                        <button
+                                          className="directionClose"
+                                          onClick={toggleDirections}
+                                        >
+                                          Close
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                       {showAnnotationBox && (
                         <div className="w-full h-[60%] fixed bottom-0 bg-gray-200">
                           <div className="flex justify-between bg-gray-900 text-white px-16 py-3">
@@ -2177,10 +1965,10 @@ console.log("QD"+questionData);
                         </div>
                       )}
                       <Modal
-                        isOpen={isReportModalOpen}
-                        closeModal={closeReportModal}
-                        apiResponse={reportResponse}
-                      ></Modal>
+                      isOpen={isReportModalOpen}
+                      closeModal={closeReportModal}
+                      apiResponse={reportResponse}
+                    ></Modal>
                     </>
                   )}
                 </div>
