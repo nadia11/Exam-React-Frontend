@@ -265,28 +265,9 @@ const fetchPendingQuestions = async (questionTestId) => {
   }
 };
 const getSatQuestionsByQuestionTestId = async (questionTestId) => {
-  let testData=null;
-  localStorage.removeItem("sat_questions");
+  let testData = null;
   try {
-     testData = await fetchPendingQuestions(questionTestId);
-    if (testData) {
-      const sat_questions = {
-        [questionTestId]: testData,
-      };
-
-      localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    } else {
-      const currentStorage = JSON.parse(localStorage.getItem("sat_questions"));
-      let storageData = null;
-      if (currentStorage) {
-        storageData = currentStorage[Object.keys(currentStorage)[0]];
-      }
-
-      if (storageData && Object.keys(storageData).length !== 0) {
-        testData = storageData;
-      }
-    }
-
+    testData = await fetchPendingQuestions(questionTestId);
     return testData || null;
   } catch (error) {
     return null;
@@ -295,7 +276,8 @@ const getSatQuestionsByQuestionTestId = async (questionTestId) => {
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 3000) / 100; // 30 minutes in miliseconds
+const QUESTION_DURATON = (1 * 60 * 3200) / 100;
+const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
@@ -309,19 +291,21 @@ function SatQuestion() {
     const currentTime = new Date();
     setMountTime(currentTime);
   }, [buttonClickTime]);
-  const savePendingTest = async () => {
-    const currentStorage = JSON.parse(localStorage.getItem("sat_questions"));
-    const currentQuestionObj = currentStorage[Object.keys(currentStorage)[0]];
+
+  const savePendingTest = async (sat_questions) => {
+   // const currentStorage = JSON.parse(sat_questions);
+    const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}savePendingTest`,
         {
           answers: currentQuestionObj.answers,
           userid: userid,
-          testid: Object.keys(currentStorage)[0],
+          testid: Object.keys(sat_questions)[0],
           submitted: false,
           currentSectionType: currentQuestionObj.currentSectionType,
           currentModuleType: currentQuestionObj.currentModuleType,
+          sat_questions: sat_questions,
           currentQuestionIndex: currentQuestionObj.currentQuestionIndex,
         },
         {
@@ -332,7 +316,7 @@ function SatQuestion() {
         }
       );
       if (response.status === 201) {
-       // navigate(`/practice_tests`);
+        // navigate(`/practice_tests`);
         console.log("success save pending answer for this module.");
       }
     } catch (error) {
@@ -635,8 +619,8 @@ function SatQuestion() {
       },
     };
 
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest();
+   // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    savePendingTest(sat_questions);
   };
 
   const handlePrevQuestion = () => {
@@ -666,8 +650,8 @@ function SatQuestion() {
       },
     };
 
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest();
+    //localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    savePendingTest(sat_questions);
   };
 
   const [showModal, setShowModal] = useState(false);
@@ -746,42 +730,50 @@ function SatQuestion() {
     module_type = 1,
     section_type = 1
   ) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}getallquestions`,
-        {
-          params: {
-            test_id,
-            module_type,
-            section_type,
-          },
-        }
-      );
-      if (response.status === 200) {
-        const questions = response?.data || [];
-        if (currentSatQuestions?.answers?.length) {
-          const newQuestions = questions?.map((q) => {
-            const question = currentSatQuestions?.answers?.find(
-              (curr) => curr?._id === q?._id
-            );
-            return {
-              ...q,
-              selected_answer: question?.selected_answer || "",
-              bookmarked: question?.bookmarked || false,
-              strikeoptions: question?.strikeoptions || [],
-            };
-          });
-          setData(newQuestions);
-        } else {
-          setData(questions);
-        }
-      }
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Error fetching questions:", error);
-    }
+      let testData = null;
+  try {
+    testData = await fetchPendingQuestions(questionTestId);
+     setData(testData.answers);
+    return testData.answers || null;
+  } catch (error) {
+    return null;
+  }
+    // try {
+    //   setLoading(true);
+    //   const response = await axios.get(
+    //     `${process.env.REACT_APP_BASE_URL}getallquestions`,
+    //     {
+    //       params: {
+    //         test_id,
+    //         module_type,
+    //         section_type,
+    //       },
+    //     }
+    //   );
+    //   if (response.status === 200) {
+    //     const questions = response?.data || [];
+    //     if (currentSatQuestions?.answers?.length) {
+    //       const newQuestions = questions?.map((q) => {
+    //         const question = currentSatQuestions?.answers?.find(
+    //           (curr) => curr?._id === q?._id
+    //         );
+    //         return {
+    //           ...q,
+    //           selected_answer: question?.selected_answer || "",
+    //           bookmarked: question?.bookmarked || false,
+    //           strikeoptions: question?.strikeoptions || [],
+    //         };
+    //       });
+    //       setData(newQuestions);
+    //     } else {
+    //       setData(questions);
+    //     }
+    //   }
+    //   setLoading(false);
+    // } catch (error) {
+    //   setLoading(false);
+    //   console.error("Error fetching questions:", error);
+    // }
   };
 
   if (loading) {
@@ -790,9 +782,6 @@ function SatQuestion() {
   <i></i>;
 
   const currentQuestion = data[currentQuestionIndex];
-
-
-
   if (data.length === 0) {
     return (
       <ModuleFinish
@@ -830,7 +819,7 @@ function SatQuestion() {
   };
 
   const handleExit = () => {
-    savePendingTest();
+   // savePendingTest();
     navigate(`/practice_tests`);
   };
   const refetchQuestions = async () => {
@@ -1369,7 +1358,11 @@ function SatQuestion() {
                                 >
                                   {isTimerVisible ? (
                                     <CountdownTimer
-                                      initialTime={QUESTION_DURATON}
+                                      initialTime={
+                                        sectionType === 1
+                                          ? QUESTION_DURATON
+                                          : MQUESTION_DURATON
+                                      }
                                       onTimeIsUp={() => {
                                         setShowModalAnswer(true);
                                       }}
@@ -1384,7 +1377,11 @@ function SatQuestion() {
                                         }}
                                       >
                                         <CountdownTimer
-                                          initialTime={QUESTION_DURATON}
+                                          initialTime={
+                                            sectionType === 1
+                                              ? QUESTION_DURATON
+                                              : MQUESTION_DURATON
+                                          }
                                           onTimeIsUp={() => {
                                             setShowModalAnswer(true);
                                           }}
@@ -1914,9 +1911,9 @@ function SatQuestion() {
                                                     )
                                                   }
                                                 />
-                                                <span className="letter">
+                                                <label className="letter">
                                                   {choiceKey}
-                                                </span>
+                                                </label>
                                               </label>
                                             </div>
                                             <div>
@@ -2060,12 +2057,14 @@ function SatQuestion() {
                                 </div>
                               </div>
                               <div className="col-4 paginations">
-                                <button
-                                  onClick={handlePrevQuestion}
-                                  disabled={currentQuestionIndex === 0}
-                                >
-                                  Back
-                                </button>
+                                {currentQuestionIndex > 0 && (
+                                  <button
+                                    onClick={handlePrevQuestion}
+                                    disabled={currentQuestionIndex === 0}
+                                  >
+                                    Back
+                                  </button>
+                                )}
                                 <button onClick={handleNextQuestion}>
                                   {currentQuestionIndex === data.length - 1
                                     ? "Submit"
