@@ -185,44 +185,6 @@ function ModalAnswers(props) {
   };
 
 
-//#region timer functionality
-const getTimeRemainingByQuestionTestId = (questionTestId) => {
-  try {
-    const item = localStorage.getItem("local_storage_question_remaining");
-    const value = item ? JSON.parse(item)[questionTestId] : null; // Use the provided questionTestId
-    return value;
-  } catch (error) {
-    return null;
-  }
-};
-
-const timeRemainingByQuestionTestId = getTimeRemainingByQuestionTestId(props.test_id);
-
-const [timeRemaining, setTimeRemaining] = useState(
-  parseInt(timeRemainingByQuestionTestId) || 3200
-);
-
-useEffect(() => {
-  const interval = setInterval(() => {
-    const newValue = getTimeRemainingByQuestionTestId(props.test_id); // Get the updated value
-    if (newValue !== timeRemaining) {
-      console.log('Value in localStorage has changed:', newValue);
-      setTimeRemaining(newValue);
-    }
-  }, 1000); // Check every 1 second (adjust this interval as needed)
-
-  return () => clearInterval(interval);
-}, [props.test_id, timeRemaining]); // Add questionTestId to the dependencies array
-
-useEffect(() => {
-  if (timeRemaining === 0) {
-    saveAnswerTest();
-    props.setShowModalAnswer(false);
-      props.setShowGap(true);
-    console.log("Time ended");
-  }
-}, [timeRemaining]);
-
 //#endregion timer
   return (
     <>
@@ -335,8 +297,8 @@ const getSatQuestionsByQuestionTestId = async (questionTestId, sectionType, modu
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 100) / 100;
-const MQUESTION_DURATON = (1 * 60 * 100) / 100;
+const QUESTION_DURATON = (1 * 60 * 3200) / 100;
+const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
@@ -848,7 +810,33 @@ function SatQuestion() {
     return <div>Loading...</div>;
   }
   <i></i>;
-
+  const saveAnswerTest = async () => {
+    //  console.log(props.data);
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}saveanswertest`,
+        {
+          test_id: questionTestId,
+          module_type: moduleType,
+          section_type: sectionType,
+          answers: data,
+          score: score,
+          userid: userid,
+        },
+        {
+          headers: {
+            "content-type": "application/json",
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+      if (response.status === 201) {
+        console.log("success save all answer for this module.");
+      }
+    } catch (error) {
+      console.error("Error saving answers:", error);
+    }
+  };
   const currentQuestion = data[currentQuestionIndex]; debugger
   if (!loading && data.length === 0) {
     return (
@@ -1399,7 +1387,8 @@ function SatQuestion() {
                                           : MQUESTION_DURATON
                                       }
                                       onTimeIsUp={() => {
-                                        setShowModalAnswer(true);
+                                        saveAnswerTest();
+                                        setShowGap(true);
                                       }}
                                       questionTestId={questionTestId}
                                       isPauseInterval={isPauseTimer}
@@ -2042,12 +2031,15 @@ function SatQuestion() {
                                 data={data}
                                 isAttempted={isAttempted}
                                 currentQuestionIndex={currentQuestionIndex}
-                                show={showModalAnswer}
+                                showModalAnswer={showModalAnswer}
                                 onContinue={handleContinue}
                                 onCancel={handleCancel}
                                 onQuestionSelect={handleQuestionSelect}
                                 setShowModalAnswer={setShowModalAnswer}
                                 setShowGap ={setShowGap}
+                                setLoading = {setLoading}
+                                handleContinue = {handleContinue}
+                                setShowModal = {setShowModal}
                               />
                             </div>
                           ) : (
