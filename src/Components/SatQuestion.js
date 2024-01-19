@@ -184,6 +184,46 @@ function ModalAnswers(props) {
     }
   };
 
+
+//#region timer functionality
+const getTimeRemainingByQuestionTestId = (questionTestId) => {
+  try {
+    const item = localStorage.getItem("local_storage_question_remaining");
+    const value = item ? JSON.parse(item)[questionTestId] : null; // Use the provided questionTestId
+    return value;
+  } catch (error) {
+    return null;
+  }
+};
+
+const timeRemainingByQuestionTestId = getTimeRemainingByQuestionTestId(props.test_id);
+
+const [timeRemaining, setTimeRemaining] = useState(
+  parseInt(timeRemainingByQuestionTestId) || 3200
+);
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    const newValue = getTimeRemainingByQuestionTestId(props.test_id); // Get the updated value
+    if (newValue !== timeRemaining) {
+      console.log('Value in localStorage has changed:', newValue);
+      setTimeRemaining(newValue);
+    }
+  }, 1000); // Check every 1 second (adjust this interval as needed)
+
+  return () => clearInterval(interval);
+}, [props.test_id, timeRemaining]); // Add questionTestId to the dependencies array
+
+useEffect(() => {
+  if (timeRemaining === 0) {
+    saveAnswerTest();
+    props.setShowModalAnswer(false);
+      props.setShowGap(true);
+    console.log("Time ended");
+  }
+}, [timeRemaining]);
+
+//#endregion timer
   return (
     <>
       <div style={{ textAlign: "center", paddingTop: "30px" }}>
@@ -295,8 +335,8 @@ const getSatQuestionsByQuestionTestId = async (questionTestId, sectionType, modu
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 3200) / 100;
-const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
+const QUESTION_DURATON = (1 * 60 * 100) / 100;
+const MQUESTION_DURATON = (1 * 60 * 100) / 100;
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
@@ -306,11 +346,21 @@ function SatQuestion() {
   const { id: questionTestId = null } = useParams();
 
   const [data, setData] = useState([]);
+
+
+
+
   useEffect(() => {
     const currentTime = new Date();
     setMountTime(currentTime);
   }, [buttonClickTime]);
 
+    useEffect(() => {
+    const currentTime = new Date();
+    setMountTime(currentTime);
+  }, [buttonClickTime]);
+
+  
   const savePendingTest = async (sat_questions) => {
    // const currentStorage = JSON.parse(sat_questions);
     const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
@@ -867,6 +917,7 @@ function SatQuestion() {
   };
 
   const handleContinue = () => {
+        setShowModalAnswer(false);
     if (moduleType === 2 && sectionType === 2) {
       setAccumulatedData((prevData) => [...prevData, ...data]);
       //handleDownloadPDF(accumulatedData);
@@ -927,21 +978,6 @@ function SatQuestion() {
     }
 
     setData(currentData);
-
-    /*const updatedData = data.map((question) => ({
-      ...question,
-      currentQuestion,
-    }));
-    setData(updatedData);
-
-    const sat_questions = {
-      [questionTestId]: {
-        ...currentSatQuestions,
-        answers: updatedData,
-      },
-    };
-
-    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));*/
   };
   const rhandleStrikeout = (choiceKey) => {
     // Set isStrikedOut to false
@@ -1205,26 +1241,6 @@ function SatQuestion() {
       return updatedWidths;
     });
   };
-
-  // setSectionType(currentSectionType + 1);
-  // const refetchQuestions = async () => {
-  //   console.log("move to next module or finish all tests");
-  //   let currentModuleType = moduleType;
-
-  //   if (moduleType === 1 && sectionType === 1) {
-  //     setModuleType(moduleType + 1);
-  //   } else if (moduleType === 2 && sectionType === 1) {
-  //     setModuleType(moduleType - 1);
-  //     setSectionType(sectionType + 1);
-  //   } else {
-  //     setModuleType(2);
-  //   }
-  //   setShowGap(false);
-  //   setShowModalAnswer(false);
-  //   setCurrentQuestionIndex(0);
-  // };
-
-  //const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
 
   return (
     <>
@@ -2030,6 +2046,8 @@ function SatQuestion() {
                                 onContinue={handleContinue}
                                 onCancel={handleCancel}
                                 onQuestionSelect={handleQuestionSelect}
+                                setShowModalAnswer={setShowModalAnswer}
+                                setShowGap ={setShowGap}
                               />
                             </div>
                           ) : (
