@@ -297,8 +297,8 @@ const getSatQuestionsByQuestionTestId = async (questionTestId, sectionType, modu
 
 // const QUESTION_SET_SIZE = 3;
 const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 3200) / 100;
-const MQUESTION_DURATON = (1 * 60 * 3500) / 100;
+const QUESTION_DURATON = (1 * 60 * 20) / 100;
+const MQUESTION_DURATON = (1 * 60 * 20) / 100;
 // const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
@@ -436,13 +436,17 @@ function SatQuestion() {
     const getData = async () => {
       const questionData = await getSatQuestionsByQuestionTestId(questionTestId);
 
-      if (questionData && (questionData.currentSectionType > sectionType || questionData.currentModuleType > moduleType)  && questionData.answers) {
-        setCurrentSatQuestions(questionData);
+      if (questionData) {
         setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
         setShowStrike(questionData.isShowStrike || false);
-        setModuleType(questionData?.currentModuleType || 1);
-        setSectionType(questionData?.currentSectionType || 1);
+
+        if ((questionData.currentSectionType >= sectionType || questionData.currentModuleType >= moduleType)  && questionData.answers) {
+          setCurrentSatQuestions(questionData);
+          setModuleType(questionData?.currentModuleType || 1);
+          setSectionType(questionData?.currentSectionType || 1);
+        }
       }
+      
     };
 
     getData();
@@ -488,7 +492,7 @@ function SatQuestion() {
 
   useEffect(() => {
     (async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(questionTestId, moduleType, sectionType); //Send section and module
+      const questionData = await getSatQuestionsByQuestionTestId(questionTestId, sectionType, moduleType); //Send section and module
 
       if(questionData && questionData.answers?.length) {
         setData(questionData.answers);
@@ -812,6 +816,7 @@ function SatQuestion() {
   <i></i>;
   const saveAnswerTest = async () => {
     //  console.log(props.data);
+ 
     try {
       const response = await axios.post(
         `${process.env.REACT_APP_BASE_URL}saveanswertest`,
@@ -837,7 +842,7 @@ function SatQuestion() {
       console.error("Error saving answers:", error);
     }
   };
-  const currentQuestion = data[currentQuestionIndex]; debugger
+  const currentQuestion = data[currentQuestionIndex];
   if (!loading && data.length === 0) {
     return (
       <ModuleFinish
@@ -1387,8 +1392,8 @@ function SatQuestion() {
                                           : MQUESTION_DURATON
                                       }
                                       onTimeIsUp={() => {
-                                        saveAnswerTest();
-                                        setShowGap(true);
+                                          saveAnswerTest();
+                                        handleContinue();
                                       }}
                                       questionTestId={questionTestId}
                                       isPauseInterval={isPauseTimer}
