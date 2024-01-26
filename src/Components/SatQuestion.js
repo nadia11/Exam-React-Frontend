@@ -9,13 +9,88 @@ import CountdownTimer from "./CountdownTimer";
 import Modal from "../Components/SatTest/Modal";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
 
+// #region constants
 const first_name = localStorage.getItem("first_name");
 const last_name = localStorage.getItem("last_name");
 const userid = localStorage.getItem("userid");
-
 const LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX =
   "LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX".toLowerCase();
+const config = {
+  loader: { load: ["[tex]/html"] },
+  tex: {
+    packages: { "[+]": ["html"] },
+    inlineMath: [
+      ["$", "$"],
+      ["\\(", "\\)"],
+    ],
+    displayMath: [
+      ["$$", "$$"],
+      ["\\[", "\\]"],
+    ],
+    chtml: {
+      minScale: 1.22,
+    },
+    options: {
+      processHtml: true, // Enable processing of HTML tags
+    },
+  },
+};
+// const QUESTION_SET_SIZE = 3;
+const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
+const QUESTION_DURATON = (1 * 60 * 100) / 100;
+const MQUESTION_DURATON = (1 * 60 * 100) / 100;
+// const QUESTION_DURATON = 3; // 30 minutes in miliseconds
+// #endregion constants
 
+//#region util functions
+const fetchPendingQuestions = async (
+  questionTestId,
+  sectionType,
+  moduleType
+) => {
+  try {
+    const response = await axios.get(
+      `${
+        process.env.REACT_APP_BASE_URL
+      }getPendingTest/${userid}/${questionTestId}${
+        sectionType
+          ? `?sectionType=${sectionType}&moduleType=${moduleType}`
+          : ""
+      }`,
+      {
+        headers: {
+          "content-type": "application/json",
+          token: localStorage.getItem("token"),
+        },
+      }
+    );
+    if (response.status >= 200 && response.status < 300) {
+      return response.data.data.data;
+    }
+  } catch (error) {
+    console.error("Error fetching pending questions:", error);
+  }
+};
+const getSatQuestionsByQuestionTestId = async (
+  questionTestId,
+  sectionType,
+  moduleType
+) => {
+  let testData = null;
+  try {
+    testData = await fetchPendingQuestions(
+      questionTestId,
+      sectionType,
+      moduleType
+    );
+    return testData || null;
+  } catch (error) {
+    return null;
+  }
+};
+//#endregion util functions
+
+//#region childComponents
 function ModuleFinish({ onTimeIsUp }) {
   return (
     <div className="container-fluid page-body-wrapper">
@@ -155,7 +230,6 @@ function ModalAnswers(props) {
     [props.data, props.show],
     props.test_id
   );
-
   const saveAnswerTest = async () => {
     //  console.log(props.data);
     try {
@@ -184,8 +258,6 @@ function ModalAnswers(props) {
     }
   };
 
-
-//#endregion timer
   return (
     <>
       <div style={{ textAlign: "center", paddingTop: "30px" }}>
@@ -248,83 +320,132 @@ function ModalAnswers(props) {
     </>
   );
 }
-const fetchPendingQuestions = async (questionTestId, sectionType, moduleType) => {
-  try {
-    const response = await axios.get(
-      `${process.env.REACT_APP_BASE_URL}getPendingTest/${userid}/${questionTestId}${ sectionType ? `?sectionType=${sectionType}&moduleType=${moduleType}` : ''}`,
-      {
-        headers: {
-          "content-type": "application/json",
-          token: localStorage.getItem("token"),
-        },
-      }
-    );
-    if (response.status >= 200 && response.status < 300) {
-      return response.data.data.data;
-    }
-  } catch (error) {
-    console.error("Error fetching pending questions:", error);
-  }
-};
-const getSatQuestionsByQuestionTestId = async (questionTestId, sectionType, moduleType) => {
-  let testData = null;
-  //localStorage.removeItem("sat_questions");
-  try {
-    testData = await fetchPendingQuestions(questionTestId, sectionType, moduleType);
-    // if (testData) {
-    //   const sat_questions = {
-    //     [questionTestId]: testData,
-    //   };
-    // }
-     // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    // } else {
-    //   const currentStorage = JSON.parse(localStorage.getItem("sat_questions"));
-    //   let storageData = null;
-    //   if (currentStorage) {
-    //     storageData = currentStorage[Object.keys(currentStorage)[0]];
-    //   }
-
-    //   if (storageData && Object.keys(storageData).length !== 0) {
-    //     testData = storageData;
-    //   }
-    // }
-
-    return testData || null;
-  } catch (error) {
-    return null;
-  }
-};
-
-// const QUESTION_SET_SIZE = 3;
-const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 20) / 100;
-const MQUESTION_DURATON = (1 * 60 * 20) / 100;
-// const QUESTION_DURATON = 3; // 30 minutes in miliseconds
+//#endregion childComponents
 
 function SatQuestion() {
+  //#region state-variables
   const [mountTime, setMountTime] = useState(null);
   const [buttonClickTime, setButtonClickTime] = useState(null);
-
   const { id: questionTestId = null } = useParams();
-
   const [data, setData] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [score, setScore] = useState(0);
+  const [showGap, setShowGap] = useState(false); // State to manage the gap display
+  const [showStrike, setShowStrike] = useState(false); // State to manage the gap display
+  const [currentSatQuestions, setCurrentSatQuestions] = useState({
+    currentQuestionIndex: 0,
+    isShowStrike: false,
+    currentModuleType: 1,
+    currentSectionType: 1,
+  });
+  const [showModalAnswer, setShowModalAnswer] = useState(false);
+  const [moduleType, setModuleType] = useState(1);
+  const [sectionType, setSectionType] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [accumulatedData, setAccumulatedData] = useState([]);
+  const [isTimerVisible, setIsTimerVisible] = useState(true);
+  const [isPauseTimer, setIsPauseTimer] = useState(false);
+  const [isMDropdownOpen, setIsMDropdownOpen] = useState(false);
+  const [correctText, setCorrectText] = useState("");
+  const [selectedText, setSelectedText] = useState();
+  const [note, setNote] = useState("");
+  const [color, setColor] = useState("yellow");
+  const [showAnnotationBox, setShowAnnotationBox] = useState(false);
+  const [textUnderline, setTextUnderline] = useState(false);
+  const [annotations, setAnnotations] = useState([
+    {
+      color: "yellow",
+      id: "IukaQ",
+      text: "ure if the bones belonged to juveniles or adults.",
+    },
+  ]);
+  const [highlightedOptions, setHighlightedOptions] = useState([]);
+  const [isStrikedOut, setIsStrikedOut] = useState(false);
+  const [answertext, setAnswertext] = useState("");
+  const [isBreakTime, setIsBreakTime] = useState(false);
+  const loadingTimer = setTimeout(() => setLoading(false), 200);
+  const [columnWidths, setColumnWidths] = useState({
+    column1: "50%",
+    column2: "50%",
+  });
+  const [isCalculatorVisible, setIsCalculatorVisible] = useState(false);
+  const [isReferenceVisible, setIsReferenceVisible] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showDirections, setShowDirections] = useState(true);
+  const [selectedTestId, setSelectedTestId] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportResponse, setReportResponse] = useState(null);
+  const navigate = useNavigate();
+  //#endregion state-variables
 
-
-
-
+  //#region useEffects
   useEffect(() => {
     const currentTime = new Date();
     setMountTime(currentTime);
   }, [buttonClickTime]);
 
-    useEffect(() => {
+  useEffect(() => {
     const currentTime = new Date();
     setMountTime(currentTime);
   }, [buttonClickTime]);
+  useEffect(() => {
+    const getData = async () => {
+      const questionData = await getSatQuestionsByQuestionTestId(
+        questionTestId
+      );
 
-  
+      if (questionData) {
+        setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
+        setShowStrike(questionData.isShowStrike || false);
+
+        if (
+          (questionData.currentSectionType >= sectionType ||
+            questionData.currentModuleType >= moduleType) &&
+          questionData.answers
+        ) {
+          setCurrentSatQuestions(questionData);
+          setModuleType(questionData?.currentModuleType || 1);
+          setSectionType(questionData?.currentSectionType || 1);
+        }
+      }
+    };
+
+    getData();
+  }, []);
+  useEffect(() => {
+    (async () => {
+      const currentQuestion = data?.[currentQuestionIndex];
+      //console.log(annotations);
+
+      setSelectedAnswer(currentQuestion?.selected_answer);
+      setAnswertext(currentQuestion?.selected_answer);
+    })();
+  }, [currentQuestionIndex, data]);
+
+  useEffect(() => {
+    (async () => {
+      const questionData = await getSatQuestionsByQuestionTestId(
+        questionTestId,
+        sectionType,
+        moduleType
+      ); //Send section and module
+
+      if (questionData && questionData.answers?.length) {
+        setData(questionData.answers);
+      } else {
+        await getQuestions(questionTestId, moduleType, sectionType);
+      }
+    })();
+  }, [moduleType, sectionType]);
+  //#endregion useEffects
+
+  //#region helperFunction
+  const handleAnswertextChange = (e) => {
+    setAnswertext(e.target.value);
+  };
   const savePendingTest = async (sat_questions) => {
-   // const currentStorage = JSON.parse(sat_questions);
+    // const currentStorage = JSON.parse(sat_questions);
     const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
     try {
       const response = await axios.post(
@@ -355,62 +476,9 @@ function SatQuestion() {
     }
   };
 
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [score, setScore] = useState(0);
-  const [showGap, setShowGap] = useState(false); // State to manage the gap display
-  const [showStrike, setShowStrike] = useState(false); // State to manage the gap display
-  const [currentSatQuestions, setCurrentSatQuestions] = useState({
-    currentQuestionIndex: 0,
-    isShowStrike: false,
-    currentModuleType: 1,
-    currentSectionType: 1,
-  });
-
-  const [showModalAnswer, setShowModalAnswer] = useState(false);
-  const [moduleType, setModuleType] = useState(1);
-  const [sectionType, setSectionType] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [accumulatedData, setAccumulatedData] = useState([]);
-  const [isTimerVisible, setIsTimerVisible] = useState(true);
-  const [isPauseTimer, setIsPauseTimer] = useState(false);
-
-  const [isMDropdownOpen, setIsMDropdownOpen] = useState(false);
-
   const handleMoreClick = () => {
     setIsMDropdownOpen(!isMDropdownOpen);
   };
-
-  const [correctText, setCorrectText] = useState("");
-  const [selectedText, setSelectedText] = useState();
-  const [note, setNote] = useState("");
-  const [color, setColor] = useState("yellow");
-  const [showAnnotationBox, setShowAnnotationBox] = useState(false);
-  const [textUnderline, setTextUnderline] = useState(false);
-  const [annotations, setAnnotations] = useState([
-    {
-      color: "yellow",
-      id: "IukaQ",
-      text: "ure if the bones belonged to juveniles or adults.",
-    },
-  ]);
-  const [highlightedOptions, setHighlightedOptions] = useState([]);
-  const [isStrikedOut, setIsStrikedOut] = useState(false);
-  const [answertext, setAnswertext] = useState("");
-  const [isBreakTime, setIsBreakTime] = useState(false);
-  const loadingTimer = setTimeout(() => setLoading(false), 200);
-
-  // Handle input field changes
-  const handleAnswertextChange = (e) => {
-    setAnswertext(e.target.value);
-  };
-  const [columnWidths, setColumnWidths] = useState({
-    column1: "50%",
-    column2: "50%",
-  });
-
-  const [isCalculatorVisible, setIsCalculatorVisible] = useState(false);
-  const [isReferenceVisible, setIsReferenceVisible] = useState(false);
 
   const calculatorHandler = () => {
     // When the "Calculator" button is clicked, show the popup
@@ -431,91 +499,6 @@ function SatQuestion() {
     // Close the popup when needed
     setIsReferenceVisible(false);
   };
-
-  useEffect(() => {
-    const getData = async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(questionTestId);
-
-      if (questionData) {
-        setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
-        setShowStrike(questionData.isShowStrike || false);
-
-        if ((questionData.currentSectionType >= sectionType || questionData.currentModuleType >= moduleType)  && questionData.answers) {
-          setCurrentSatQuestions(questionData);
-          setModuleType(questionData?.currentModuleType || 1);
-          setSectionType(questionData?.currentSectionType || 1);
-        }
-      }
-      
-    };
-
-    getData();
-  }, []);
-
-  // useEffect(() => {
-  //   localStorage.setItem(
-  //     LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX,
-  //     JSON.stringify({ [questionTestId]: currentQuestionIndex })
-  //   );
-  // }, [currentQuestionIndex, questionTestId]);
-
-  // const sentence = "asd qwe zxc rty fgh 123";
-  // const wordToHighlight = "123";
-  // const highlightColor = "yellow";
-
-  // const highlightWords = (sentence, wordToHighlight, highlightColor) => {
-  //   const words = sentence.split(" ");
-  //   const highlightedWords = words.map((word) =>
-  //     word === wordToHighlight ? (
-  //       <span style={{ backgroundColor: highlightColor }}>{word}</span>
-  //     ) : (
-  //       word
-  //     )
-  //   );
-  //   return highlightedWords;
-  // };
-
-  // const modifiedContent = highlightWords(
-  //   sentence,
-  //   wordToHighlight,
-  //   highlightColor
-  // );
-  useEffect(() => {
-    (async () => {
-      const currentQuestion = data?.[currentQuestionIndex];
-      //console.log(annotations);
-
-      setSelectedAnswer(currentQuestion?.selected_answer);
-      setAnswertext(currentQuestion?.selected_answer);
-    })();
-  }, [currentQuestionIndex, data]);
-
-  useEffect(() => {
-    (async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(questionTestId, sectionType, moduleType); //Send section and module
-
-      if(questionData && questionData.answers?.length) {
-        setData(questionData.answers);
-      } else {
-        await getQuestions(questionTestId, moduleType, sectionType);
-      } 
-    })();
-  }, [moduleType, sectionType]);
-
-  // useEffect(() => {
-  //   // {
-  //   //   bottom: 347,
-  //   //   height: 16,
-  //   //   left: 1058.0859375,
-  //   //   right: 1196.640625,
-  //   //   top: 331;
-  //   //   width: 138.5546875,
-  //   //   x: 1058.0859375,
-  //   //   y: 331,
-  //   // test.getAttribute("style", "color:green");
-  //   // test.textContent = toDOM(currentSatQuestions?.parentEl)
-  // }, [currentSatQuestions?.range]);
-
   const handleOptionClick = (answerIndex) => {
     // console.log('answerIndex',answerIndex)
     rhandleStrikeout(answerIndex);
@@ -660,7 +643,7 @@ function SatQuestion() {
       },
     };
 
-   // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
+    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
     savePendingTest(sat_questions);
   };
 
@@ -694,44 +677,8 @@ function SatQuestion() {
     //localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
     savePendingTest(sat_questions);
   };
-
-  const [showModal, setShowModal] = useState(false);
-
-  const [showDirections, setShowDirections] = useState(true);
-
-  const [selectedTestId, setSelectedTestId] = useState(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportResponse, setReportResponse] = useState(null);
-  const navigate = useNavigate();
-  // ... Other functions and code ...
-
   const getReport = async (userid, questionTestId) => {
     navigate(`/sat/testresults/${questionTestId}`);
-    /*try {
-      setLoading(true);
-      const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}getsatreportbyuser`,
-        {
-          params: {
-            userid,
-            questionTestId,
-          },
-        }
-      );
-      if (response.status === 200) {  
-
-        // Display readingCount as a string
-        alert("Reading & Writing Count: " + response.data.readingCount);
-
-        // Display mathCount as a number
-        alert("Math Count: " + response.data.mathCount);
-
-      }
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      console.error("Error fetching questions:", error);
-    }*/
   };
 
   const openReportModal = () => {
@@ -785,7 +732,8 @@ function SatQuestion() {
         }
       );
       if (response.status === 200) {
-        const questions = response?.data || []; debugger;
+        const questions = response?.data || [];
+        debugger;
         if (currentSatQuestions?.answers?.length) {
           const newQuestions = questions?.map((q) => {
             const question = currentSatQuestions?.answers?.find(
@@ -809,49 +757,6 @@ function SatQuestion() {
       console.error("Error fetching questions:", error);
     }
   };
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  <i></i>;
-  const saveAnswerTest = async () => {
-    //  console.log(props.data);
- 
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}saveanswertest`,
-        {
-          test_id: questionTestId,
-          module_type: moduleType,
-          section_type: sectionType,
-          answers: data,
-          score: score,
-          userid: userid,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            token: localStorage.getItem("token"),
-          },
-        }
-      );
-      if (response.status === 201) {
-        console.log("success save all answer for this module.");
-      }
-    } catch (error) {
-      console.error("Error saving answers:", error);
-    }
-  };
-  const currentQuestion = data[currentQuestionIndex];
-  if (!loading && data.length === 0) {
-    return (
-      <ModuleFinish
-        onTimeIsUp={() => {
-          console.log("redirect to another page");
-        }}
-      />
-    );
-  }
   const handleDownloadPDF = (questionsData) => {
     const pdf = new jsPDF();
 
@@ -880,7 +785,7 @@ function SatQuestion() {
   };
 
   const handleExit = () => {
-   // savePendingTest();
+    // savePendingTest();
     navigate(`/practice_tests`);
   };
   const refetchQuestions = async () => {
@@ -910,7 +815,7 @@ function SatQuestion() {
   };
 
   const handleContinue = () => {
-        setShowModalAnswer(false);
+    setShowModalAnswer(false);
     if (moduleType === 2 && sectionType === 2) {
       setAccumulatedData((prevData) => [...prevData, ...data]);
       //handleDownloadPDF(accumulatedData);
@@ -923,28 +828,34 @@ function SatQuestion() {
   const handleCancel = () => {
     setShowModalAnswer(false);
   };
+  const saveAnswerTest = async () => {
+    //  console.log(props.data);
 
-  const config = {
-    loader: { load: ["[tex]/html"] },
-    tex: {
-      packages: { "[+]": ["html"] },
-      inlineMath: [
-        ["$", "$"],
-        ["\\(", "\\)"],
-      ],
-      displayMath: [
-        ["$$", "$$"],
-        ["\\[", "\\]"],
-      ],
-      chtml: {
-        minScale: 1.22,
-      },
-      options: {
-        processHtml: true, // Enable processing of HTML tags
-      },
-    },
+    try {
+      const response = await axios.post(
+        `${process.env.REACT_APP_BASE_URL}saveanswertest`,
+        {
+          test_id: questionTestId,
+          module_type: moduleType,
+          section_type: sectionType,
+          answers: data,
+          score: score,
+          userid: userid,
+        },
+        {
+          headers: {
+            "content-type": "application/json",
+            token: localStorage.getItem("token"),
+          },
+        }
+      );
+      if (response.status === 201) {
+        console.log("success save all answer for this module.");
+      }
+    } catch (error) {
+      console.error("Error saving answers:", error);
+    }
   };
-
   const handleStrikeout = (choiceKey) => {
     console.log("sdfdsf");
     setIsStrikedOut(!isStrikedOut);
@@ -1038,7 +949,7 @@ function SatQuestion() {
       };
 
       // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-      savePendingTest(sat_questions)
+      savePendingTest(sat_questions);
     }
     selection?.removeAllRanges();
   };
@@ -1178,38 +1089,6 @@ function SatQuestion() {
   const handleResume = () => {
     setIsBreakTime(false);
     refetchQuestions();
-    // Update selected answer for the current question
-    // const currentData = [...data];
-    // Object.assign(currentData[currentQuestionIndex], {
-    //   ...currentData?.[currentQuestionIndex],
-    //   selected_answer: selectedAnswer,
-    // });
-    // setData(currentData);
-    // if (showModalAnswer && currentQuestionIndex === data?.length - 1) {
-    //   handleContinue();
-    // } else if (currentQuestionIndex === data?.length - 1) {
-    //   setShowModalAnswer(true);
-    // } else {
-    //   setAnswertext("");
-    //   setSelectedAnswer(
-    //     data?.[currentQuestionIndex + 1]?.selected_answer || null
-    //   );
-    //   setCurrentQuestionIndex(currentQuestionIndex + 1);
-    // }
-
-    // const sat_questions = {
-    //   [questionTestId]: {
-    //     currentSectionType: sectionType,
-    //     currentModuleType: moduleType,
-    //     answers: currentData,
-    //     currentQuestionIndex:
-    //       currentQuestionIndex === data?.length - 1
-    //         ? currentQuestionIndex
-    //         : currentQuestionIndex + 1,
-    //   },
-    // };
-
-    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
   };
   const toggleColumnWidth = (column) => {
     setColumnWidths((prevWidths) => {
@@ -1234,6 +1113,23 @@ function SatQuestion() {
       return updatedWidths;
     });
   };
+  //#endregion helperFunction
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  <i></i>;
+
+  const currentQuestion = data[currentQuestionIndex];
+  if (!loading && data.length === 0) {
+    return (
+      <ModuleFinish
+        onTimeIsUp={() => {
+          console.log("redirect to another page");
+        }}
+      />
+    );
+  }
 
   return (
     <>
@@ -1392,8 +1288,8 @@ function SatQuestion() {
                                           : MQUESTION_DURATON
                                       }
                                       onTimeIsUp={() => {
-                                          saveAnswerTest();
-                                        handleContinue();
+                                        // saveAnswerTest();
+                                        // handleContinue();
                                       }}
                                       questionTestId={questionTestId}
                                       isPauseInterval={isPauseTimer}
@@ -2041,10 +1937,10 @@ function SatQuestion() {
                                 onCancel={handleCancel}
                                 onQuestionSelect={handleQuestionSelect}
                                 setShowModalAnswer={setShowModalAnswer}
-                                setShowGap ={setShowGap}
-                                setLoading = {setLoading}
-                                handleContinue = {handleContinue}
-                                setShowModal = {setShowModal}
+                                setShowGap={setShowGap}
+                                setLoading={setLoading}
+                                handleContinue={handleContinue}
+                                setShowModal={setShowModal}
                               />
                             </div>
                           ) : (
