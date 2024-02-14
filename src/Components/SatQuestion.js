@@ -8,129 +8,53 @@ import DesmosCalculator from "../Components/DesmosCalculator";
 import CountdownTimer from "./CountdownTimer";
 import Modal from "../Components/SatTest/Modal";
 import { MathJax, MathJaxContext } from "better-react-mathjax";
-
-// #region constants
 const first_name = localStorage.getItem("first_name");
 const last_name = localStorage.getItem("last_name");
 const userid = localStorage.getItem("userid");
 const LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX =
-  "LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX".toLowerCase();
-const config = {
-  loader: { load: ["[tex]/html"] },
-  tex: {
-    packages: { "[+]": ["html"] },
-    inlineMath: [
-      ["$", "$"],
-      ["\\(", "\\)"],
-    ],
-    displayMath: [
-      ["$$", "$$"],
-      ["\\[", "\\]"],
-    ],
-    chtml: {
-      minScale: 1.22,
-    },
-    options: {
-      processHtml: true, // Enable processing of HTML tags
-    },
-  },
-};
-// const QUESTION_SET_SIZE = 3;
-const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
-const QUESTION_DURATON = (1 * 60 * 100) / 100;
-const MQUESTION_DURATON = (1 * 60 * 100) / 100;
-// const QUESTION_DURATON = 3; // 30 minutes in miliseconds
-// #endregion constants
+    "LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX".toLowerCase();
 
-//#region util functions
-const fetchPendingQuestions = async (
-  questionTestId,
-  sectionType,
-  moduleType
-) => {
-  try {
-    const response = await axios.get(
-      `${
-        process.env.REACT_APP_BASE_URL
-      }getPendingTest/${userid}/${questionTestId}${
-        sectionType
-          ? `?sectionType=${sectionType}&moduleType=${moduleType}`
-          : ""
-      }`,
-      {
-        headers: {
-          "content-type": "application/json",
-          token: localStorage.getItem("token"),
-        },
-      }
-    );
-    if (response.status >= 200 && response.status < 300) {
-      return response.data.data.data;
-    }
-  } catch (error) {
-    console.error("Error fetching pending questions:", error);
-  }
-};
-const getSatQuestionsByQuestionTestId = async (
-  questionTestId,
-  sectionType,
-  moduleType
-) => {
-  let testData = null;
-  try {
-    testData = await fetchPendingQuestions(
-      questionTestId,
-      sectionType,
-      moduleType
-    );
-    return testData || null;
-  } catch (error) {
-    return null;
-  }
-};
-//#endregion util functions
-
-//#region childComponents
 function ModuleFinish({ onTimeIsUp }) {
   return (
-    <div className="container-fluid page-body-wrapper">
-      <div className="main-panel">
-        <div className="content-wrapper">
-          <div className="card">
-            <div className="card-body">
-              <div className="col-12">
-                <div className="row">
-                  <div className="col-6">
-                    <h4 className="card-title">Create New SAT Test</h4>
+      <div className="container-fluid page-body-wrapper">
+        <div className="main-panel">
+          <div className="content-wrapper">
+            <div className="card">
+              <div className="card-body">
+                <div className="col-12">
+                  <div className="row">
+                    <div className="col-6">
+                      <h4 className="card-title">Create New SAT Test</h4>
+                    </div>
+                    <div className="col-6 text-right">
+                      <Link to={`/sattests`} className="btn btn-outline-primary">
+                        <i className="fa fa-arrow-left"></i> Back to SAT Tests
+                      </Link>
+                    </div>
                   </div>
-                  <div className="col-6 text-right">
-                    <Link to={`/sattests`} className="btn btn-outline-primary">
-                      <i className="fa fa-arrow-left"></i> Back to SAT Tests
-                    </Link>
-                  </div>
-                </div>
-                <br />
-                <div className="row">
-                  <div className="col-12">
-                    <div
-                      className="container-fluid"
-                      style={{ background: "white" }}
-                    >
-                      <div>
-                        <h4>Complete all modules</h4>
-                        <p>
-                          All your work has been saved.
-                          <br />
-                          You'll move on automatically in just a movement.
-                          <br />
-                          Do not refresh this page or exit the app.
-                        </p>
-                        <img src="images/Loading_icon.gif" border="0" />
-                        {/* <CountdownTimer initialTime={GAP_DURATION / 1000} /> */}
-                        <CountdownTimer
-                          initialTime={6000 / 1000}
-                          onTimeIsUp={onTimeIsUp}
-                        />
+                  <br />
+                  <div className="row">
+                    <div className="col-12">
+                      <div
+                          className="container-fluid"
+                          style={{ background: "white" }}
+                      >
+                        <div>
+                          <h4>Complete all modules</h4>
+                          <p>
+                            All your work has been saved.
+                            <br />
+                            You'll move on automatically in just a movement.
+                            <br />
+                            Do not refresh this page or exit the app.
+                          </p>
+                          <img src="images/Loading_icon.gif" border="0" />
+                          {/* <CountdownTimer initialTime={GAP_DURATION / 1000} /> */}
+                          <CountdownTimer
+                              initialTime={6000 / 1000}
+                              onTimeIsUp={onTimeIsUp}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -140,24 +64,23 @@ function ModuleFinish({ onTimeIsUp }) {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
 function QuestionModal({
-  data,
-  section,
-  module,
-  currentQuestionIndex,
-  onQuestionSelect,
-  onClose,
-  goToReviewPage,
-}) {
+                         data,
+                         section,
+                         module,
+                         currentQuestionIndex,
+                         onQuestionSelect,
+                         onClose,
+                         goToReviewPage,
+                       }) {
   function isAttempted(index) {
     if (
-      data?.[index]?.selected_answer &&
-      data?.[index]?.selected_answer !== null &&
-      data?.[index]?.selected_answer !== ""
+        data?.[index]?.selected_answer &&
+        data?.[index]?.selected_answer !== null &&
+        data?.[index]?.selected_answer !== ""
     ) {
       return "active";
     }
@@ -166,89 +89,87 @@ function QuestionModal({
   }
 
   return (
-    <div className="question-modal">
-      <div className="modal-content">
-        <div className="row">
-          <div style={{ float: "left", width: "90%" }}>
-            <h2>
-              Section {section}, Module {module}:{" "}
-              {section === 1 ? " Reading & Writing" : " Math"}
-            </h2>
-          </div>
-          <div style={{ float: "right", width: "10%" }}>
-            <button onClick={onClose} className="questionclose">
-              X
-            </button>
-          </div>
-        </div>
-        <hr className="dashed-border" />
-        <ul className="breadcrumb">
-          <li>Current</li>
-          <li>Unanswered</li>
-          <li>For Review</li>
-        </ul>
-        <hr />
-        <ul id="question_list">
-          {data.map((_, index) => (
-            <li key={index} className={`${isAttempted(index)} question-no`}>
-              <div className="bookmark-container">
-                {data[index]?.bookmarked ? (
-                  <i className="fa fa-bookmark" aria-hidden="true"></i>
-                ) : (
-                  ""
-                )}
-              </div>
-              <div className="current-container">
-                {currentQuestionIndex === index ? (
-                  <i className="fa fa-map-marker" aria-hidden="true"></i>
-                ) : (
-                  <></>
-                )}
-              </div>
-              <button onClick={() => onQuestionSelect(index)}>
-                {index + 1}
+      <div className="question-modal">
+        <div className="modal-content">
+          <div className="row">
+            <div style={{ float: "left", width: "90%" }}>
+              <h2>
+                Section {section}, Module {module}:{" "}
+                {section === 1
+                    ? " Reading & Writing"
+                    : " Math"}
+              </h2>
+            </div>
+            <div style={{ float: "right", width: "10%" }}>
+              <button onClick={onClose} className="questionclose">
+                X
               </button>
-            </li>
-          ))}
-        </ul>
-        <button className="review_button" onClick={() => goToReviewPage()}>
-          Go to Review Page
-        </button>
+            </div>
+          </div>
+          <hr className="dashed-border" />
+          <ul className="breadcrumb">
+            <li>Current</li>
+            <li>Unanswered</li>
+            <li>For Review</li>
+          </ul>
+          <hr />
+          <ul id="question_list">
+            {data.map((_, index) => (
+                <li key={index} className={`${isAttempted(index)} question-no`}>
+                  <div className="bookmark-container">
+                    {data[index]?.bookmarked ? (
+                        <i className="fa fa-bookmark" aria-hidden="true"></i>
+                    ) : (
+                        ""
+                    )}
+                  </div>
+                  <div className="current-container">
+                    {currentQuestionIndex === index ? (
+                        <i className="fa fa-map-marker" aria-hidden="true"></i>
+                    ) : (
+                        <></>
+                    )}
+                  </div>
+                  <button onClick={() => onQuestionSelect(index)}>
+                    {index + 1}
+                  </button>
+                </li>
+            ))}
+          </ul>
+          <button className="review_button" onClick={() => goToReviewPage()}>
+            Go to Review Page
+          </button>
+        </div>
       </div>
-    </div>
   );
 }
 
 function ModalAnswers(props) {
-  useEffect(
-    () => {
-      if (props.show) {
-        // save answer test here
-        saveAnswerTest();
-      }
-    },
-    [props.data, props.show],
-    props.test_id
-  );
+  useEffect(() => {
+    if (props.show) {
+      // save answer test here
+      saveAnswerTest();
+    }
+  }, [props.data, props.show], props.test_id);
+
   const saveAnswerTest = async () => {
-    //  console.log(props.data);
     try {
       const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}saveanswertest`,
-        {
-          test_id: props.test_id,
-          module_type: props.moduleType,
-          section_type: props.sectionType,
-          answers: props.data,
-          score: props.score,
-          userid: userid,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            token: localStorage.getItem("token"),
+          `${process.env.REACT_APP_BASE_URL}saveanswertest`,
+          {
+            test_id: props.test_id,
+            module_type: props.moduleType,
+            section_type: props.sectionType,
+            answers: props.data,
+            score: props.score,
+            userid: userid
           },
-        }
+          {
+            headers: {
+              "content-type": "application/json",
+              token: localStorage.getItem("token"),
+            },
+          }
       );
       if (response.status === 201) {
         console.log("success save all answer for this module.");
@@ -258,95 +179,121 @@ function ModalAnswers(props) {
     }
   };
 
-  return (
-    <>
-      <div style={{ textAlign: "center", paddingTop: "30px" }}>
-        <h3>Check Your Work</h3>
-        <p>
-          On test day, you won't be able to move on the next module until time
-          expires,
-          <br />
-          For these practice questions, you can click <strong>Next</strong> when
-          you're ready to move on
-        </p>
-        <ul id="question_list" className="checkwork">
-          <div className="row">
-            <div className="title">
-              <h6>
-                <strong>
-                  Section {props.sectionType}, Module {props.moduleType}:{" "}
-                  {props.sectionType === 1
-                    ? "Reading & Writing"
-                    : "Maths Questions"}
-                </strong>
-              </h6>
-            </div>
-            <div className="breadcrub">
-              <i className="fa fa-check" aria-hidden="true"></i> Unanswered{" "}
-              <i className="fa fa-bookmark" aria-hidden="true"></i> For Review
-            </div>
-          </div>
-          <hr />
-          {props.data.map((_, index) => (
-            <li
-              key={index}
-              className={`${props.isAttempted(index)} question-no`}
-            >
-              <div className="bookmark-container">
-                {props.data[index]?.bookmarked ? (
-                  <i className="fa fa-bookmark" aria-hidden="true"></i>
-                ) : (
-                  ""
-                )}
-              </div>
-              <div className="current-container">
-                {props.currentQuestionIndex === index ? (
-                  <i className="fa fa-map-marker" aria-hidden="true"></i>
-                ) : (
-                  <></>
-                )}
-              </div>
 
-              <button onClick={() => props.onQuestionSelect(index)}>
-                {index + 1}
-              </button>
-            </li>
-          ))}
-        </ul>
-        {/* <button type="button" onClick={() => props.onContinue()}>
+  return (
+      <>
+        <div style={{ textAlign: "center", paddingTop: "30px" }}>
+          <h3>Check Your Work</h3>
+          <p>
+            On test day, you won't be able to move on the next module until time
+            expires,
+            <br />
+            For these practice questions, you can click <strong>Next</strong> when
+            you're ready to move on
+          </p>
+          <ul id="question_list" className="checkwork">
+            <div className="row">
+              <div className="title">
+                <h6>
+                  <strong>
+                    Section {props.sectionType}, Module {props.moduleType}:{" "}
+                    {props.sectionType === 1
+                        ? "Reading & Writing"
+                        : "Maths Questions"}
+                  </strong>
+                </h6>
+              </div>
+              <div className="breadcrub">
+                <i className="fa fa-check" aria-hidden="true"></i> Unanswered{" "}
+                <i className="fa fa-bookmark" aria-hidden="true"></i> For Review
+              </div>
+            </div>
+            <hr />
+            {props.data.map((_, index) => (
+                <li
+                    key={index}
+                    className={`${props.isAttempted(index)} question-no`}
+                >
+                  <div className="bookmark-container">
+                    {props.data[index]?.bookmarked ? (
+                        <i className="fa fa-bookmark" aria-hidden="true"></i>
+                    ) : (
+                        ""
+                    )}
+                  </div>
+                  <div className="current-container">
+                    {props.currentQuestionIndex === index ? (
+                        <i className="fa fa-map-marker" aria-hidden="true"></i>
+                    ) : (
+                        <></>
+                    )}
+                  </div>
+
+                  <button onClick={() => props.onQuestionSelect(index)}>
+                    {index + 1}
+                  </button>
+                </li>
+            ))}
+          </ul>
+          {/* <button type="button" onClick={() => props.onContinue()}>
           Continue
         </button> */}
-      </div>
-    </>
+        </div>
+      </>
   );
 }
-//#endregion childComponents
+
+const getSatQuestionsByQuestionTestId = (questionTestId) => {
+  try {
+    return (
+        JSON.parse(localStorage.getItem("sat_questions"))?.[questionTestId] ||
+        null
+    );
+  } catch (error) {
+    return null;
+  }
+};
+
+// const QUESTION_SET_SIZE = 3;
+const GAP_DURATION = 1 * 60 * 1000; // 10 minutes in milliseconds
+const QUESTION_DURATON = (1 * 60 * 3000) / 100; // 30 minutes in miliseconds
+// const QUESTION_DURATON = 3; // 30 minutes in miliseconds
 
 function SatQuestion() {
-  //#region state-variables
-  const [mountTime, setMountTime] = useState(null);
-  const [buttonClickTime, setButtonClickTime] = useState(null);
   const { id: questionTestId = null } = useParams();
+
+  const currentSatQuestions = getSatQuestionsByQuestionTestId(questionTestId);
+
   const [data, setData] = useState([]);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(
+      currentSatQuestions?.currentQuestionIndex || 0
+  );
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [score, setScore] = useState(0);
   const [showGap, setShowGap] = useState(false); // State to manage the gap display
-  const [showStrike, setShowStrike] = useState(false); // State to manage the gap display
-  const [currentSatQuestions, setCurrentSatQuestions] = useState({
-    currentQuestionIndex: 0,
-    isShowStrike: false,
-    currentModuleType: 1,
-    currentSectionType: 1,
-  });
+  const [showStrike, setShowStrike] = useState(
+      currentSatQuestions?.isShowStrike || false
+  ); // State to manage the gap display
+
   const [showModalAnswer, setShowModalAnswer] = useState(false);
-  const [moduleType, setModuleType] = useState(1);
-  const [sectionType, setSectionType] = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [moduleType, setModuleType] = useState(
+      currentSatQuestions?.currentModuleType || 1
+  );
+  const [sectionType, setSectionType] = useState(
+      currentSatQuestions?.currentSectionType || 1
+  );
+  const [loading, setLoading] = useState(false);
   const [accumulatedData, setAccumulatedData] = useState([]);
   const [isTimerVisible, setIsTimerVisible] = useState(true);
   const [isPauseTimer, setIsPauseTimer] = useState(false);
+
+
   const [isMDropdownOpen, setIsMDropdownOpen] = useState(false);
+
+  const handleMoreClick = () => {
+    setIsMDropdownOpen(!isMDropdownOpen);
+  };
+
   const [correctText, setCorrectText] = useState("");
   const [selectedText, setSelectedText] = useState();
   const [note, setNote] = useState("");
@@ -364,121 +311,18 @@ function SatQuestion() {
   const [isStrikedOut, setIsStrikedOut] = useState(false);
   const [answertext, setAnswertext] = useState("");
   const [isBreakTime, setIsBreakTime] = useState(false);
-  const loadingTimer = setTimeout(() => setLoading(false), 200);
+
+  // Handle input field changes
+  const handleAnswertextChange = (e) => {
+    setAnswertext(e.target.value);
+  };
   const [columnWidths, setColumnWidths] = useState({
     column1: "50%",
     column2: "50%",
   });
+
   const [isCalculatorVisible, setIsCalculatorVisible] = useState(false);
   const [isReferenceVisible, setIsReferenceVisible] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [showDirections, setShowDirections] = useState(true);
-  const [selectedTestId, setSelectedTestId] = useState(null);
-  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [reportResponse, setReportResponse] = useState(null);
-  const navigate = useNavigate();
-  //#endregion state-variables
-
-  //#region useEffects
-  useEffect(() => {
-    const currentTime = new Date();
-    setMountTime(currentTime);
-  }, [buttonClickTime]);
-
-  useEffect(() => {
-    const currentTime = new Date();
-    setMountTime(currentTime);
-  }, [buttonClickTime]);
-  useEffect(() => {
-    const getData = async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(
-        questionTestId
-      );
-
-      if (questionData) {
-        setCurrentQuestionIndex(questionData.currentQuestionIndex || 0);
-        setShowStrike(questionData.isShowStrike || false);
-
-        if (
-          (questionData.currentSectionType >= sectionType ||
-            questionData.currentModuleType >= moduleType) &&
-          questionData.answers
-        ) {
-          setCurrentSatQuestions(questionData);
-          setModuleType(questionData?.currentModuleType || 1);
-          setSectionType(questionData?.currentSectionType || 1);
-        }
-      }
-    };
-
-    getData();
-  }, []);
-  useEffect(() => {
-    (async () => {
-      const currentQuestion = data?.[currentQuestionIndex];
-      //console.log(annotations);
-
-      setSelectedAnswer(currentQuestion?.selected_answer);
-      setAnswertext(currentQuestion?.selected_answer);
-    })();
-  }, [currentQuestionIndex, data]);
-
-  useEffect(() => {
-    (async () => {
-      const questionData = await getSatQuestionsByQuestionTestId(
-        questionTestId,
-        sectionType,
-        moduleType
-      ); //Send section and module
-
-      if (questionData && questionData.answers?.length) {
-        setData(questionData.answers);
-      } else {
-        await getQuestions(questionTestId, moduleType, sectionType);
-      }
-    })();
-  }, [moduleType, sectionType]);
-  //#endregion useEffects
-
-  //#region helperFunction
-  const handleAnswertextChange = (e) => {
-    setAnswertext(e.target.value);
-  };
-  const savePendingTest = async (sat_questions) => {
-    // const currentStorage = JSON.parse(sat_questions);
-    const currentQuestionObj = sat_questions[Object.keys(sat_questions)[0]];
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}savePendingTest`,
-        {
-          answers: currentQuestionObj.answers,
-          userid: userid,
-          testid: Object.keys(sat_questions)[0],
-          submitted: false,
-          currentSectionType: currentQuestionObj.currentSectionType,
-          currentModuleType: currentQuestionObj.currentModuleType,
-          sat_questions: sat_questions,
-          currentQuestionIndex: currentQuestionObj.currentQuestionIndex,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            token: localStorage.getItem("token"),
-          },
-        }
-      );
-      if (response.status === 201) {
-        // navigate(`/practice_tests`);
-        console.log("success save pending answer for this module.");
-      }
-    } catch (error) {
-      console.error("Error saving pending answers:", error);
-    }
-  };
-
-  const handleMoreClick = () => {
-    setIsMDropdownOpen(!isMDropdownOpen);
-  };
 
   const calculatorHandler = () => {
     // When the "Calculator" button is clicked, show the popup
@@ -499,8 +343,71 @@ function SatQuestion() {
     // Close the popup when needed
     setIsReferenceVisible(false);
   };
+
+  // useEffect(() => {
+  //   localStorage.setItem(
+  //     LOCAL_STORAGE_CURRENT_QUESTIONS_INDEX,
+  //     JSON.stringify({ [questionTestId]: currentQuestionIndex })
+  //   );
+  // }, [currentQuestionIndex, questionTestId]);
+
+
+  // const sentence = "asd qwe zxc rty fgh 123";
+  // const wordToHighlight = "123";
+  // const highlightColor = "yellow";
+
+  // const highlightWords = (sentence, wordToHighlight, highlightColor) => {
+  //   const words = sentence.split(" ");
+  //   const highlightedWords = words.map((word) =>
+  //     word === wordToHighlight ? (
+  //       <span style={{ backgroundColor: highlightColor }}>{word}</span>
+  //     ) : (
+  //       word
+  //     )
+  //   );
+  //   return highlightedWords;
+  // };
+
+  // const modifiedContent = highlightWords(
+  //   sentence,
+  //   wordToHighlight,
+  //   highlightColor
+  // );
+  useEffect(() => {
+    (async () => {
+      const currentQuestion = data?.[currentQuestionIndex];
+      console.log(annotations);
+
+      setSelectedAnswer(currentQuestion?.selected_answer);
+      setAnswertext(currentQuestion?.selected_answer);
+    })();
+  }, [currentQuestionIndex, data]);
+
+  useEffect(() => {
+    (async () => {
+      await getQuestions(questionTestId, moduleType, sectionType);
+    })();
+  }, [moduleType, sectionType]);
+
+  useEffect(() => {
+    // {
+    //   bottom: 347,
+    //   height: 16,
+    //   left: 1058.0859375,
+    //   right: 1196.640625,
+    //   top: 331;
+    //   width: 138.5546875,
+    //   x: 1058.0859375,
+    //   y: 331,
+    // test.getAttribute("style", "color:green");
+    // test.textContent = toDOM(currentSatQuestions?.parentEl)
+  }, [currentSatQuestions?.range]);
+
+
+
   const handleOptionClick = (answerIndex) => {
-    // console.log('answerIndex',answerIndex)
+
+    console.log('answerIndex',answerIndex)
     rhandleStrikeout(answerIndex);
     setSelectedAnswer(answerIndex);
 
@@ -524,7 +431,7 @@ function SatQuestion() {
   };
 
   const handleAnswerSelect = (answerIndex) => {
-    console.log("s");
+    console.log('s')
     setSelectedAnswer(answerIndex);
 
     // Update the score based on the correct answer
@@ -580,8 +487,7 @@ function SatQuestion() {
       },
     };
 
-    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest(sat_questions);
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
   };
 
   const toggleStrike = () => {
@@ -598,26 +504,17 @@ function SatQuestion() {
   };
 
   const handleNextQuestion = () => {
-    // Update selected answer for the current question
-    const currentTime = new Date();
-    setButtonClickTime(currentTime);
 
+    // Update selected answer for the current question
     const currentData = [...data];
 
     const isInput =
-      currentQuestion?.question_type === "Math" &&
-      currentQuestion.isgridIn.toLowerCase() === "true";
+        currentQuestion?.question_type === "Math" &&
+        currentQuestion.isgridIn.toLowerCase() === "true";
     Object.assign(currentData[currentQuestionIndex], {
       ...currentData?.[currentQuestionIndex],
       selected_answer: isInput ? answertext : selectedAnswer,
     });
-    if (mountTime) {
-      const difference = (currentTime - mountTime) / 1000;
-      Object.assign(currentData[currentQuestionIndex], {
-        ...currentData?.[currentQuestionIndex],
-        duration: difference,
-      });
-    }
     setData(currentData);
     if (showModalAnswer && currentQuestionIndex === data?.length - 1) {
       handleContinue();
@@ -626,7 +523,7 @@ function SatQuestion() {
     } else {
       setAnswertext("");
       setSelectedAnswer(
-        data?.[currentQuestionIndex + 1]?.selected_answer || null
+          data?.[currentQuestionIndex + 1]?.selected_answer || null
       );
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     }
@@ -637,21 +534,20 @@ function SatQuestion() {
         currentModuleType: moduleType,
         answers: currentData,
         currentQuestionIndex:
-          currentQuestionIndex === data?.length - 1
-            ? currentQuestionIndex
-            : currentQuestionIndex + 1,
+            currentQuestionIndex === data?.length - 1
+                ? currentQuestionIndex
+                : currentQuestionIndex + 1,
       },
     };
 
-    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest(sat_questions);
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
   };
 
   const handlePrevQuestion = () => {
     if (showModalAnswer) setShowModalAnswer(false);
     const isInput =
-      currentQuestion?.question_type === "Math" &&
-      currentQuestion.isgridIn.toLowerCase() === "true";
+        currentQuestion?.question_type === "Math" &&
+        currentQuestion.isgridIn.toLowerCase() === "true";
     // Update selected answer for the current question
     const currentData = [...data];
     Object.assign(currentData[currentQuestionIndex], {
@@ -674,11 +570,48 @@ function SatQuestion() {
       },
     };
 
-    //localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-    savePendingTest(sat_questions);
+    localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
   };
+
+  const [showModal, setShowModal] = useState(false);
+
+  const [showDirections, setShowDirections] = useState(true);
+
+
+
+  const [selectedTestId, setSelectedTestId] = useState(null);
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [reportResponse, setReportResponse] = useState(null);
+  const navigate = useNavigate();
+  // ... Other functions and code ...
+
   const getReport = async (userid, questionTestId) => {
     navigate(`/sat/testresults/${questionTestId}`);
+    /*try {
+      setLoading(true);
+      const response = await axios.get(
+        `${process.env.REACT_APP_BASE_URL}getsatreportbyuser`,
+        {
+          params: {
+            userid,
+            questionTestId,
+          },
+        }
+      );
+      if (response.status === 200) {
+
+        // Display readingCount as a string
+        alert("Reading & Writing Count: " + response.data.readingCount);
+
+        // Display mathCount as a number
+        alert("Math Count: " + response.data.mathCount);
+
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      console.error("Error fetching questions:", error);
+    }*/
   };
 
   const openReportModal = () => {
@@ -713,31 +646,25 @@ function SatQuestion() {
     setCurrentQuestionIndex(data.length - 1);
   };
 
-  const getQuestions = async (
-    test_id = questionTestId,
-    module_type = moduleType,
-    section_type = sectionType
-  ) => {
+  const getQuestions = async (test_id = questionTestId, module_type = 1, section_type = 1) => {
     try {
-      clearTimeout(loadingTimer);
       setLoading(true);
       const response = await axios.get(
-        `${process.env.REACT_APP_BASE_URL}getallquestions`,
-        {
-          params: {
-            test_id,
-            module_type,
-            section_type,
-          },
-        }
+          `${process.env.REACT_APP_BASE_URL}getallquestions`,
+          {
+            params: {
+              test_id,
+              module_type,
+              section_type,
+            },
+          }
       );
       if (response.status === 200) {
         const questions = response?.data || [];
-        debugger;
         if (currentSatQuestions?.answers?.length) {
           const newQuestions = questions?.map((q) => {
             const question = currentSatQuestions?.answers?.find(
-              (curr) => curr?._id === q?._id
+                (curr) => curr?._id === q?._id
             );
             return {
               ...q,
@@ -757,6 +684,23 @@ function SatQuestion() {
       console.error("Error fetching questions:", error);
     }
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  <i></i>
+
+  const currentQuestion = data[currentQuestionIndex];
+
+  if (data.length === 0) {
+    return (
+        <ModuleFinish
+            onTimeIsUp={() => {
+              console.log("redirect to another page");
+            }}
+        />
+    );
+  }
   const handleDownloadPDF = (questionsData) => {
     const pdf = new jsPDF();
 
@@ -770,8 +714,8 @@ function SatQuestion() {
 
       // Add user's answer
       const answerText = question.isAnswered
-        ? `Your Answer: ${question.choice_a}`
-        : "Not answered";
+          ? `Your Answer: ${question.choice_a}`
+          : "Not answered";
       pdf.text(answerText, 20, yPos);
       yPos += 10; // Increase y-position for next line
 
@@ -784,10 +728,6 @@ function SatQuestion() {
     pdf.save("SAT_Questions_Answers.pdf");
   };
 
-  const handleExit = () => {
-    // savePendingTest();
-    navigate(`/practice_tests`);
-  };
   const refetchQuestions = async () => {
     if (moduleType === 1 && sectionType === 1) {
       setModuleType(moduleType + 1);
@@ -815,7 +755,6 @@ function SatQuestion() {
   };
 
   const handleContinue = () => {
-    setShowModalAnswer(false);
     if (moduleType === 2 && sectionType === 2) {
       setAccumulatedData((prevData) => [...prevData, ...data]);
       //handleDownloadPDF(accumulatedData);
@@ -828,36 +767,30 @@ function SatQuestion() {
   const handleCancel = () => {
     setShowModalAnswer(false);
   };
-  const saveAnswerTest = async () => {
-    //  console.log(props.data);
 
-    try {
-      const response = await axios.post(
-        `${process.env.REACT_APP_BASE_URL}saveanswertest`,
-        {
-          test_id: questionTestId,
-          module_type: moduleType,
-          section_type: sectionType,
-          answers: data,
-          score: score,
-          userid: userid,
-        },
-        {
-          headers: {
-            "content-type": "application/json",
-            token: localStorage.getItem("token"),
-          },
-        }
-      );
-      if (response.status === 201) {
-        console.log("success save all answer for this module.");
+  const config = {
+    loader: { load: ["[tex]/html"] },
+    tex: {
+      packages: { "[+]": ["html"] },
+      inlineMath: [
+        ["$", "$"],
+        ["\\(", "\\)"]
+      ],
+      displayMath: [
+        ["$$", "$$"],
+        ["\\[", "\\]"]
+      ],
+      chtml: {
+        minScale: 1.22,
+      },
+      options: {
+        processHtml: true, // Enable processing of HTML tags
       }
-    } catch (error) {
-      console.error("Error saving answers:", error);
     }
   };
+
   const handleStrikeout = (choiceKey) => {
-    console.log("sdfdsf");
+    console.log("sdfdsf")
     setIsStrikedOut(!isStrikedOut);
     // Update the score based on the correct answer
     const currentData = [...data];
@@ -878,10 +811,25 @@ function SatQuestion() {
     });
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove("highlighted");
+      element.classList.remove('highlighted');
     }
 
     setData(currentData);
+
+    /*const updatedData = data.map((question) => ({
+     ...question,
+     currentQuestion,
+   }));
+   setData(updatedData);
+
+   const sat_questions = {
+     [questionTestId]: {
+       ...currentSatQuestions,
+       answers: updatedData,
+     },
+   };
+
+   localStorage.setItem("sat_questions", JSON.stringify(sat_questions));*/
   };
   const rhandleStrikeout = (choiceKey) => {
     // Set isStrikedOut to false
@@ -903,7 +851,7 @@ function SatQuestion() {
 
     const element = document.querySelector(`#${choiceKey}`);
     if (element) {
-      element.classList.remove("highlighted");
+      element.classList.remove('highlighted');
     }
     // Update the state or any other necessary logic based on the updated data
     setData(currentData);
@@ -948,8 +896,7 @@ function SatQuestion() {
         },
       };
 
-      // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
-      savePendingTest(sat_questions);
+      localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
     }
     selection?.removeAllRanges();
   };
@@ -1014,9 +961,9 @@ function SatQuestion() {
   }
   function isAttempted(index) {
     if (
-      data?.[index]?.selected_answer &&
-      data?.[index]?.selected_answer !== null &&
-      data?.[index]?.selected_answer !== ""
+        data?.[index]?.selected_answer &&
+        data?.[index]?.selected_answer !== null &&
+        data?.[index]?.selected_answer !== ""
     ) {
       return "active";
     }
@@ -1054,6 +1001,7 @@ function SatQuestion() {
       const html = document.getElementById(currentQuestion._id).innerHTML;
       currentQuestion.passage = html;
 
+
       setNote("");
     }
 
@@ -1062,7 +1010,7 @@ function SatQuestion() {
 
   const uuid = () => {
     const characters =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let shortUUID = "";
     for (let i = 0; i < 5; i++) {
       const randomIndex = Math.floor(Math.random() * characters.length);
@@ -1089,6 +1037,38 @@ function SatQuestion() {
   const handleResume = () => {
     setIsBreakTime(false);
     refetchQuestions();
+    // Update selected answer for the current question
+    // const currentData = [...data];
+    // Object.assign(currentData[currentQuestionIndex], {
+    //   ...currentData?.[currentQuestionIndex],
+    //   selected_answer: selectedAnswer,
+    // });
+    // setData(currentData);
+    // if (showModalAnswer && currentQuestionIndex === data?.length - 1) {
+    //   handleContinue();
+    // } else if (currentQuestionIndex === data?.length - 1) {
+    //   setShowModalAnswer(true);
+    // } else {
+    //   setAnswertext("");
+    //   setSelectedAnswer(
+    //     data?.[currentQuestionIndex + 1]?.selected_answer || null
+    //   );
+    //   setCurrentQuestionIndex(currentQuestionIndex + 1);
+    // }
+
+    // const sat_questions = {
+    //   [questionTestId]: {
+    //     currentSectionType: sectionType,
+    //     currentModuleType: moduleType,
+    //     answers: currentData,
+    //     currentQuestionIndex:
+    //       currentQuestionIndex === data?.length - 1
+    //         ? currentQuestionIndex
+    //         : currentQuestionIndex + 1,
+    //   },
+    // };
+
+    // localStorage.setItem("sat_questions", JSON.stringify(sat_questions));
   };
   const toggleColumnWidth = (column) => {
     setColumnWidths((prevWidths) => {
@@ -1113,1012 +1093,891 @@ function SatQuestion() {
       return updatedWidths;
     });
   };
-  //#endregion helperFunction
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  <i></i>;
+  // setSectionType(currentSectionType + 1);
+  // const refetchQuestions = async () => {
+  //   console.log("move to next module or finish all tests");
+  //   let currentModuleType = moduleType;
 
-  const currentQuestion = data[currentQuestionIndex];
-  if (!loading && data.length === 0) {
-    return (
-      <ModuleFinish
-        onTimeIsUp={() => {
-          console.log("redirect to another page");
-        }}
-      />
-    );
-  }
+  //   if (moduleType === 1 && sectionType === 1) {
+  //     setModuleType(moduleType + 1);
+  //   } else if (moduleType === 2 && sectionType === 1) {
+  //     setModuleType(moduleType - 1);
+  //     setSectionType(sectionType + 1);
+  //   } else {
+  //     setModuleType(2);
+  //   }
+  //   setShowGap(false);
+  //   setShowModalAnswer(false);
+  //   setCurrentQuestionIndex(0);
+  // };
+
+  const questionTextContent = currentQuestion.question_text.replace(/\n/g, '<br>');
+
+
+
 
   return (
-    <>
-      <div
-        className="container-fluid page-body-wrapper"
-        style={{ padding: "0px" }}
-      >
-        <div className="main-panel">
-          <div>
-            <div
-              className={
-                "card " + (showGap && !isBreakTime ? "class1" : "class2")
-              }
-            >
-              <div className="card-body" style={{ padding: "0px" }}>
-                <div
-                  className={"container-fluid " + (showGap ? "cclass1" : "")}
-                >
-                  {isBreakTime ? (
-                    <div className="showgap">
-                      <div className="col-12">
-                        <div className="col-6 h-100 flex flex-col justify-center align-items-center">
-                          <CountdownTimer
-                            initialTime={GAP_DURATION / 100}
-                            containerStyle={{}}
-                            styleTimer={{ fontSize: 60 }}
-                            onTimeIsUp={handleResume}
-                          />
-                          <button
-                            className="directionClose"
-                            onClick={handleResume}
-                          >
-                            Resume Test
-                          </button>
-                        </div>
-                        <div className="col-6 text-left max-w-md">
-                          <h1>Practice Test Break</h1>
-                          <p>
-                            You can resume this practice test as soon as you're
-                            ready to move on. On test day, you'll wait until the
-                            clock counts down. Read below to see how breaks work
-                            on test day.
-                          </p>
-                          <hr className="divide-dashed" />
+      <>
+        <div
+            className="container-fluid page-body-wrapper"
+            style={{ padding: "0px" }}
+        >
+          <div className="main-panel">
+            <div>
+              <div
+                  className={
+                      "card " + (showGap && !isBreakTime ? "class1" : "class2")
+                  }
+              >
+                <div className="card-body" style={{ padding: "0px" }}>
+                  <div
+                      className={"container-fluid " + (showGap ? "cclass1" : "")}
+                  >
+                    {isBreakTime ? (
+                        <div className="showgap">
+                          <div className="col-12">
+                            <div className="col-6 h-100 flex flex-col justify-center align-items-center">
+                              <CountdownTimer
+                                  initialTime={GAP_DURATION / 100}
+                                  containerStyle={{}}
+                                  styleTimer={{ fontSize: 60 }}
+                                  onTimeIsUp={handleResume}
+                              />
+                              <button
+                                  className="directionClose"
+                                  onClick={handleResume}
+                              >
+                                Resume Test
+                              </button>
+                            </div>
+                            <div className="col-6 text-left max-w-md">
+                              <h1>Practice Test Break</h1>
+                              <p>
+                                You can resume this practice test as soon as you're
+                                ready to move on. On test day, you'll wait until the
+                                clock counts down. Read below to see how breaks work
+                                on test day.
+                              </p>
+                              <hr className="divide-dashed" />
 
-                          <h1>Practice Test Break</h1>
-                          <span>
+                              <h1>Practice Test Break</h1>
+                              <span>
                             You may leave the room, but do not disturb students
                             who are still testing.
                           </span>
-                          <br />
-                          <br />
-                          <span>Testing these rules during the break</span>
-                          <br />
-                          <br />
-                          <span>
+                              <br />
+                              <br />
+                              <span>Testing these rules during the break</span>
+                              <br />
+                              <br />
+                              <span>
                             1. Do not access your phone, smartwatch, textbooks,
                             notes, or the internet.
                           </span>
-                          <br />
-                          <br />
-                          <span>2. Do not eat or drink in the test room.</span>
-                          <br />
-                          <br />
-                          <span>
+                              <br />
+                              <br />
+                              <span>2. Do not eat or drink in the test room.</span>
+                              <br />
+                              <br />
+                              <span>
                             3. Do not speak in the test room, outside the test
                             room, do not discuss the exam with anyone.
                           </span>
-                          <br />
+                              <br />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  ) : showGap ? (
-                    <div className="showgap">
-                      <h4>This Module Is Over</h4>
-                      <p>
-                        All your work has been saved.
-                        <br />
-                        You'll move on automatically in just a movement.
-                        <br />
-                        Do not refresh this page or exit the app.
-                      </p>
-                      <img
-                        src="https://i.gifer.com/ZKZg.gif"
-                        border="0"
-                        style={{ height: "50px" }}
-                      />
+                    ) : showGap ? (
+                        <div className="showgap">
+                          <h4>This Module Is Over</h4>
+                          <p>
+                            All your work has been saved.
+                            <br />
+                            You'll move on automatically in just a movement.
+                            <br />
+                            Do not refresh this page or exit the app.
+                          </p>
+                          <img
+                              src="https://i.gifer.com/ZKZg.gif"
+                              border="0"
+                              style={{ height: "50px" }}
+                          />
 
-                      <CountdownTimer
-                        initialTime={60000 / 10000}
-                        onTimeIsUp={onBreakTime}
-                        forceUpdate
-                        // questionTestId={questionTestId}
-                        // isPauseInterval={isPauseTimer}
-                      />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="row">
-                        <div className="col-12">
-                          <div className="row fixed-header">
-                            <div
-                              className="col-12"
-                              style={{ padding: "0px 20px" }}
-                            >
-                              <div className="col-4">
-                                Section {sectionType}, Module {moduleType} :
-                                {sectionType === 1
-                                  ? " Reading & Writing"
-                                  : " Math"}
-                                <br />
-                                <button onClick={toggleDirections}>
-                                  {showDirections ? (
-                                    // Display an arrow that points upwards when the popup is open
-                                    <span
-                                      style={{
-                                        fontSize: "13px",
-                                        paddingTop: "10px",
-                                        display: "block",
-                                      }}
-                                    >
-                                      Directions{" "}
-                                      <i className="fa fa-angle-up"></i>
-                                    </span>
-                                  ) : (
-                                    // Display an arrow that points downwards when the popup is closed
-                                    <span
-                                      style={{
-                                        fontSize: "13px",
-                                        paddingTop: "10px",
-                                        display: "block",
-                                      }}
-                                    >
-                                      Directions{" "}
-                                      <i className="fa fa-angle-down"></i>
-                                    </span>
-                                  )}
-                                </button>
-                              </div>
-                              <div
-                                className="col-4"
-                                style={{
-                                  textAlign: "center",
-                                }}
-                              >
+                          <CountdownTimer
+                              initialTime={60000 / 10000}
+                              onTimeIsUp={onBreakTime}
+                              forceUpdate
+                              // questionTestId={questionTestId}
+                              // isPauseInterval={isPauseTimer}
+                          />
+                        </div>
+                    ) : (
+                        <>
+                          <div className="row">
+                            <div className="col-12">
+                              <div className="row fixed-header">
                                 <div
-                                  style={{
-                                    height: "30px",
-                                  }}
+                                    className="col-12"
+                                    style={{ padding: "0px 20px" }}
                                 >
-                                  {isTimerVisible ? (
-                                    <CountdownTimer
-                                      initialTime={
-                                        sectionType === 1
-                                          ? QUESTION_DURATON
-                                          : MQUESTION_DURATON
-                                      }
-                                      onTimeIsUp={() => {
-                                        // saveAnswerTest();
-                                        // handleContinue();
+                                  <div className="col-4">
+                                    Section {sectionType}, Module {moduleType} :
+                                    {sectionType === 1
+                                        ? " Reading & Writing"
+                                        : " Math"}
+                                    <br />
+                                    <button onClick={toggleDirections}>
+                                      {showDirections ? (
+                                          // Display an arrow that points upwards when the popup is open
+                                          <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
+                                      Directions{" "}
+                                            <i className="fa fa-angle-up"></i>
+                                    </span>
+                                      ) : (
+                                          // Display an arrow that points downwards when the popup is closed
+                                          <span style={{ fontSize: "13px", paddingTop:"10px", display:"block" }}>
+                                      Directions{" "}
+                                            <i className="fa fa-angle-down"></i>
+                                    </span>
+                                      )}
+                                    </button>
+                                  </div>
+                                  <div
+                                      className="col-4"
+                                      style={{
+                                        textAlign: "center",
                                       }}
-                                      questionTestId={questionTestId}
-                                      isPauseInterval={isPauseTimer}
-                                    />
-                                  ) : (
-                                    <>
-                                      <div
+                                  >
+                                    <div
                                         style={{
-                                          display: "none",
+                                          height: "30px",
                                         }}
-                                      >
-                                        <CountdownTimer
-                                          initialTime={
-                                            sectionType === 1
-                                              ? QUESTION_DURATON
-                                              : MQUESTION_DURATON
-                                          }
-                                          onTimeIsUp={() => {
-                                            setShowModalAnswer(true);
-                                          }}
-                                          questionTestId={questionTestId}
-                                          isPauseInterval={isPauseTimer}
-                                        />
-                                      </div>
-                                      <i
-                                        className="fa fa-clock-o"
-                                        style={{
-                                          fontSize: "20px",
-                                        }}
-                                      ></i>
-                                    </>
-                                  )}
-                                </div>
-                                <button
-                                  className="timetoggles"
-                                  onClick={() =>
-                                    setIsTimerVisible(!isTimerVisible)
-                                  }
-                                >
-                                  {isTimerVisible ? "Hide" : "Show"}
-                                </button>
-                                {/* Pause timer */}
-                              </div>
-                              <div
-                                className="col-4"
-                                style={{
-                                  textAlign: "right",
-                                }}
-                              >
-                                {sectionType === 1 ? (
-                                  <div>
-                                    <button
-                                      onClick={annotateHandler}
-                                      className="tooltip-container"
                                     >
-                                      <i className="fa fa-pencil"></i>
-                                      <br />
-                                      <span style={{ fontSize: "12px" }}>
+                                      {isTimerVisible ? (
+                                          <CountdownTimer
+                                              initialTime={QUESTION_DURATON}
+                                              onTimeIsUp={() => {
+                                                setShowModalAnswer(true);
+                                              }}
+                                              questionTestId={questionTestId}
+                                              isPauseInterval={isPauseTimer}
+                                          />
+                                      ) : (
+                                          <><div style={{
+                                            display: "none",
+                                          }}>
+                                            <CountdownTimer
+                                                initialTime={QUESTION_DURATON}
+                                                onTimeIsUp={() => {
+                                                  setShowModalAnswer(true);
+                                                } }
+                                                questionTestId={questionTestId}
+                                                isPauseInterval={isPauseTimer} />
+                                          </div><i
+                                              className="fa fa-clock-o"
+                                              style={{
+                                                fontSize: "20px",
+                                              }}
+                                          ></i></>
+                                      )}
+                                    </div>
+                                    <button
+                                        className="timetoggles"
+                                        onClick={() =>
+                                            setIsTimerVisible(!isTimerVisible)
+                                        }
+                                    >
+                                      {isTimerVisible ? "Hide" : "Show"}
+                                    </button>
+                                    {/* Pause timer */}
+                                  </div>
+                                  <div
+                                      className="col-4"
+                                      style={{
+                                        textAlign: "right",
+                                      }}
+                                  >
+                                    {sectionType === 1 ? (
+                                        <div>
+                                          <button
+                                              onClick={annotateHandler}
+                                              className="tooltip-container"
+                                          >
+                                            <i className="fa fa-pencil"></i>
+                                            <br />
+                                            <span style={{ fontSize: "12px" }}>
                                         Annotate
                                       </span>
-                                      <div className="tooltip-text">
-                                        MAKE A SELECTION FIRST
-                                        <br />
-                                        Select some text, then
-                                        <br />
-                                        press annotate.
-                                      </div>
-                                    </button>
-                                    <button
-                                      className=""
-                                      style={{
-                                        marginLeft: "20px",
-                                      }}
-                                      onClick={handleMoreClick}
-                                    >
-                                      <i className="fa fa-ellipsis-v"></i>
-                                      <br />
-                                      <span style={{ fontSize: "12px" }}>
+                                            <div className="tooltip-text">
+                                              MAKE A SELECTION FIRST<br/>
+                                              Select some text, then<br/>
+                                              press annotate.
+                                            </div>
+                                          </button>
+                                          <button
+                                              className=""
+                                              style={{
+                                                marginLeft: "20px",
+                                              }}
+                                              onClick={handleMoreClick}
+                                          >
+                                            <i className="fa fa-ellipsis-v"></i>
+                                            <br />
+                                            <span style={{ fontSize: "12px" }}>
                                         More
                                       </span>
-                                    </button>
-                                    {isMDropdownOpen && (
-                                      <div className="dropdown-content">
-                                        <button
-                                          onClick={() =>
-                                            setIsPauseTimer(!isPauseTimer)
-                                          }
-                                        >
-                                          <i
-                                            className={
-                                              isPauseTimer
-                                                ? "fa fa-play"
-                                                : "fa fa-pause"
-                                            }
-                                          ></i>{" "}
-                                          {!isPauseTimer ? "Pause" : "Play"}
-                                        </button>
-                                        <br />
-                                        <button onClick={handleExit}>
-                                          <i className="fa fa-times"></i> Exit
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <button
-                                      onClick={calculatorHandler}
-                                      className=""
-                                    >
-                                      <i className="fa fa-calculator"></i>
-                                      <br />
-                                      <span style={{ fontSize: "12px" }}>
-                                        Calculator
-                                      </span>
-                                    </button>
-                                    {isCalculatorVisible && (
-                                      <div
-                                        className="backgroundFade"
-                                        id="backgroundFade"
-                                      >
-                                        <div className="calculatorContainer">
-                                          <div className="row">
-                                            <div
-                                              className="column"
-                                              style={{ textAlign: "left" }}
-                                            >
-                                              Calculator
-                                            </div>
-                                            <div className="column"></div>
-                                            <div
-                                              className="column"
-                                              style={{ textAlign: "right" }}
-                                            >
-                                              <a onClick={calculatorclosePopup}>
-                                                <i className="fa fa-close"></i>
-                                              </a>
-                                            </div>
-                                          </div>
-                                          <div id="calculatorContent">
-                                            <div style={{ height: "320px" }}>
-                                              <DesmosCalculator />
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    <button
-                                      onClick={referenceHandler}
-                                      className=""
-                                      style={{
-                                        marginLeft: "20px",
-                                      }}
-                                    >
-                                      <i className="fa fa-ellipsis-v"></i>
-                                      <br />
-                                      <span style={{ fontSize: "12px" }}>
-                                        Reference
-                                      </span>
-                                    </button>
-                                    {isReferenceVisible && (
-                                      <div
-                                        className="backgroundFade"
-                                        id="backgroundFade"
-                                      >
-                                        <div className="refernceContainer">
-                                          <div className="row">
-                                            <div
-                                              className="column"
-                                              style={{ textAlign: "left" }}
-                                            >
-                                              Reference
-                                            </div>
-                                            <div className="column"></div>
-                                            <div
-                                              className="column"
-                                              style={{ textAlign: "right" }}
-                                            >
-                                              <a onClick={refernceclosePopup}>
-                                                <i className="fa fa-close"></i>
-                                              </a>
-                                            </div>
-                                          </div>
-                                          <div id="refernceContent">
-                                            <div style={{ height: "320px" }}>
-                                              <div>
-                                                <img
-                                                  src="/images/refernce.png"
-                                                  border="0"
-                                                />
+                                          </button>
+                                          {isMDropdownOpen && (
+                                              <div  className="dropdown-content">
+                                                <button
+                                                    onClick={() => setIsPauseTimer(!isPauseTimer)}
+                                                >
+                                                  <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
+                                                </button>
+                                                <br />
+                                                <a href="/practice_tests">
+                                                  <i className="fa fa-times"></i> Exit
+                                                </a>
                                               </div>
-                                              <p>
-                                                The numbmer of degrees of arc in
-                                                a circle in 360.
-                                                <br />
-                                                The number of radians of arc in
-                                                a circle is 2pie.
-                                                <br />
-                                                The sum of the measuares in
-                                                degrees of the angles of a
-                                                triangle is 180.
-                                              </p>
-                                            </div>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    )}
-                                    <button
-                                      className=""
-                                      style={{
-                                        marginLeft: "20px",
-                                      }}
-                                      onClick={handleMoreClick}
-                                    >
-                                      <i className="fa fa-ellipsis-v"></i>
-                                      <br />
-                                      <span style={{ fontSize: "12px" }}>
-                                        More
-                                      </span>
-                                    </button>
-                                    {isMDropdownOpen && (
-                                      <div className="dropdown-content">
-                                        <button
-                                          onClick={() =>
-                                            setIsPauseTimer(!isPauseTimer)
-                                          }
-                                        >
-                                          <i
-                                            className={
-                                              isPauseTimer
-                                                ? "fa fa-play"
-                                                : "fa fa-pause"
-                                            }
-                                          ></i>{" "}
-                                          {!isPauseTimer ? "Pause" : "Play"}
-                                        </button>
-                                        <br />
-                                        <button onClick={handleExit}>
-                                          <i className="fa fa-times"></i> Exit
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <hr className="dashed-border" />
-                          </div>
-                          {!showModalAnswer ? (
-                            <div
-                              className={`row ${
-                                isPauseTimer ? "disabled" : ""
-                              }`}
-                              style={{
-                                height: "100vh",
-                                marginTop: "100px",
-                              }}
-                            >
-                              <div
-                                className="col-12"
-                                style={{ padding: "0px 20px" }}
-                              >
-                                {sectionType === 2 &&
-                                currentQuestion?.figurestatus ===
-                                  "false" ? null : (
-                                  <div
-                                    className="col-6 column"
-                                    style={{
-                                      borderRight: "2px solid #666",
-                                      height: "100%",
-                                      paddingRight: "20px",
-                                      width: columnWidths.column1,
-                                      display:
-                                        sectionType == 2 &&
-                                        currentQuestion?.figure === "false"
-                                          ? "none"
-                                          : "block",
-                                    }}
-                                  >
-                                    <button
-                                      className="column1_max"
-                                      onClick={() =>
-                                        toggleColumnWidth("column1")
-                                      }
-                                    >
-                                      <img
-                                        src="/images/lefticon.png"
-                                        border="0"
-                                      />
-                                    </button>
-                                    <div style={{ marginRight: "20px" }}>
-                                      {currentQuestion?.context !== "" && (
-                                        <div
-                                          className="passage_test"
-                                          style={{
-                                            paddingBottom: "20px",
-                                            paddingRight: "20px",
-                                          }}
-                                          dangerouslySetInnerHTML={{
-                                            __html: he.decode(
-                                              currentQuestion?.context?.replace(
-                                                "�",
-                                                "&eacute;"
-                                              )
-                                            ),
-                                          }}
-                                        />
-                                      )}
-                                      {currentQuestion?.figure !== "" && (
-                                        <div>
-                                          <img
-                                            src={currentQuestion?.figure}
-                                            style={{ width: "100%" }}
-                                            alt="Question Figure"
-                                          />
-                                        </div>
-                                      )}
-                                      <div
-                                        className="passage_test"
-                                        style={{
-                                          paddingBottom: "20px",
-                                          paddingRight: "20px",
-                                        }}
-                                        id={currentQuestion._id}
-                                        dangerouslySetInnerHTML={{
-                                          __html: he.decode(
-                                            currentQuestion?.passage?.replace(
-                                              "�",
-                                              "&eacute;"
-                                            )
-                                          ),
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                                <div
-                                  className="col-6 column"
-                                  style={{
-                                    paddingLeft: "20px",
-                                    width: columnWidths.column2,
-                                    margin:
-                                      sectionType === 2 &&
-                                      currentQuestion?.figurestatus === "false"
-                                        ? "0px auto"
-                                        : "",
-                                    float:
-                                      sectionType === 2 &&
-                                      currentQuestion?.figurestatus === "false"
-                                        ? "none"
-                                        : "left",
-                                  }}
-                                >
-                                  {sectionType === 2 &&
-                                  currentQuestion?.figurestatus ===
-                                    "false" ? null : (
-                                    <button
-                                      className="column2_max"
-                                      onClick={() =>
-                                        toggleColumnWidth("column2")
-                                      }
-                                    >
-                                      <img
-                                        src="/images/righticon.png"
-                                        border="0"
-                                      />
-                                    </button>
-                                  )}
-                                  <div
-                                    className="row question_header"
-                                    style={{ marginLeft: "3px" }}
-                                  >
-                                    <div className="question_no">
-                                      {currentQuestionIndex + 1}{" "}
-                                    </div>
-                                    <div
-                                      style={{ float: "left", width: "85%" }}
-                                    >
-                                      <div
-                                        style={{
-                                          float: "left",
-                                          marginRight: "10px",
-                                        }}
-                                        onClick={toggleBookMark}
-                                      >
-                                        <div
-                                          className={
-                                            currentQuestion?.bookmarked
-                                              ? "bookmarked-class"
-                                              : "not-bookmarked-class"
-                                          }
-                                        >
-                                          {currentQuestion?.bookmarked ? (
-                                            <i
-                                              className="fa fa-bookmark"
-                                              aria-hidden="true"
-                                            ></i>
-                                          ) : (
-                                            <i
-                                              className="fa fa-bookmark-o"
-                                              aria-hidden="true"
-                                            ></i>
                                           )}
                                         </div>
-                                      </div>
-                                      Mark for Review
-                                    </div>
+                                    ) : (
+                                        <div>
+                                          <button
+                                              onClick={calculatorHandler}
+                                              className=""
+                                          >
+                                            <i className="fa fa-calculator"></i>
+                                            <br />
+                                            <span style={{ fontSize: "12px" }}>
+                                        Calculator
+                                      </span>
+                                          </button>
+                                          {isCalculatorVisible && (
+                                              <div
+                                                  className="backgroundFade"
+                                                  id="backgroundFade"
+                                              >
+                                                <div className="calculatorContainer">
+                                                  <div className="row">
+                                                    <div
+                                                        className="column"
+                                                        style={{ textAlign: "left" }}
+                                                    >
+                                                      Calculator
+                                                    </div>
+                                                    <div className="column"></div>
+                                                    <div
+                                                        className="column"
+                                                        style={{ textAlign: "right" }}
+                                                    >
+                                                      <a onClick={calculatorclosePopup}>
+                                                        <i className="fa fa-close"></i>
+                                                      </a>
+                                                    </div>
+                                                  </div>
+                                                  <div id="calculatorContent">
+                                                    <div style={{ height: "320px" }}>
+                                                      <DesmosCalculator />
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                          )}
+                                          <button
+                                              onClick={referenceHandler}
+                                              className=""
+                                              style={{
+                                                marginLeft: "20px",
+                                              }}
+                                          >
+                                            <i className="fa fa-ellipsis-v"></i>
+                                            <br />
+                                            <span style={{ fontSize: "12px" }}>
+                                        Reference
+                                      </span>
+                                          </button>
+                                          {isReferenceVisible && (
+                                              <div
+                                                  className="backgroundFade"
+                                                  id="backgroundFade"
+                                              >
+                                                <div className="refernceContainer">
+                                                  <div className="row">
+                                                    <div
+                                                        className="column"
+                                                        style={{ textAlign: "left" }}
+                                                    >
+                                                      Reference
+                                                    </div>
+                                                    <div className="column"></div>
+                                                    <div
+                                                        className="column"
+                                                        style={{ textAlign: "right" }}
+                                                    >
+                                                      <a onClick={refernceclosePopup}>
+                                                        <i className="fa fa-close"></i>
+                                                      </a>
+                                                    </div>
+                                                  </div>
+                                                  <div id="refernceContent">
+                                                    <div style={{ height: "320px" }}>
+                                                      <div>
+                                                        <img
+                                                            src="/images/refernce.png"
+                                                            border="0"
+                                                        />
+                                                      </div>
+                                                      <p>
+                                                        The numbmer of degrees of arc in
+                                                        a circle in 360.
+                                                        <br />
+                                                        The number of radians of arc in
+                                                        a circle is 2pie.
+                                                        <br />
+                                                        The sum of the measuares in
+                                                        degrees of the angles of a
+                                                        triangle is 180.
+                                                      </p>
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+                                          )}
+                                          <button
+                                              className=""
+                                              style={{
+                                                marginLeft: "20px",
+                                              }}
+                                              onClick={handleMoreClick}
+                                          >
+                                            <i className="fa fa-ellipsis-v"></i>
+                                            <br />
+                                            <span style={{ fontSize: "12px" }}>
+                                        More
+                                      </span>
+                                          </button>
+                                          {isMDropdownOpen && (
+                                              <div  className="dropdown-content">
+                                                <button
+                                                    onClick={() => setIsPauseTimer(!isPauseTimer)}
+                                                >
+                                                  <i className={isPauseTimer ? "fa fa-play" : "fa fa-pause"}></i>  {!isPauseTimer ? "Pause" : "Play"}
+                                                </button>
+                                                <br />
+                                                <a href="/practice_tests">
+                                                  <i className="fa fa-times"></i> Exit
+                                                </a>
+                                              </div>
+                                          )}
+                                        </div>
+                                    )}
+                                  </div>
+                                </div>
+                                <hr className="dashed-border" />
+                              </div>
+                              {!showModalAnswer ? (
+                                  <div
+                                      className={`row ${isPauseTimer ? 'disabled' : ''}`}
+                                      style={{
+                                        height: "100vh",
+                                        marginTop: "100px",
+                                      }}
+                                  >
                                     <div
-                                      title=""
-                                      className={`strikeeout ${
-                                        showStrike ? "active" : ""
-                                      }`}
-                                      onClick={toggleStrike}
+                                        className="col-12"
+                                        style={{ padding: "0px 20px" }}
                                     >
-                                      {showStrike ? "ABC" : "ABC"}
-                                      <span className="tooltiptext">
+                                      {sectionType === 2 &&
+                                      currentQuestion?.figurestatus ===
+                                      "false" ? null : (
+                                          <div
+                                              className="col-6 column"
+                                              style={{
+                                                borderRight: "2px solid #666",
+                                                height: "100%",
+                                                paddingRight: "20px",
+                                                width: columnWidths.column1,
+                                                display:
+                                                    sectionType == 2 &&
+                                                    currentQuestion?.figure === "false"
+                                                        ? "none"
+                                                        : "block",
+                                              }}
+                                          >
+                                            <button
+                                                className="column1_max"
+                                                onClick={() =>
+                                                    toggleColumnWidth("column1")
+                                                }
+                                            >
+                                              <img src='/images/lefticon.png' border='0'/>
+                                            </button>
+                                            <div style={{marginRight:"20px"}}>
+                                              {currentQuestion?.context !== "" && (
+                                                  <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
+                                                       dangerouslySetInnerHTML={{
+                                                         __html: he.decode(
+                                                             currentQuestion?.context.replace("�", "&eacute;")
+                                                         ),
+                                                       }}
+                                                  />
+                                              )}
+                                              {currentQuestion?.figure !== "" && (
+                                                  <div>
+                                                    <img
+                                                        src={currentQuestion?.figure}
+                                                        style={{ width: "100%" }}
+                                                        alt="Question Figure"
+                                                    />
+                                                  </div>
+                                              )}
+                                              <div className="passage_test" style={{ paddingBottom: "20px", paddingRight:"20px" }}
+                                                   id={currentQuestion._id}
+                                                   dangerouslySetInnerHTML={{
+                                                     __html: he.decode(
+                                                         currentQuestion?.passage.replace("�", "&eacute;")
+                                                     ),
+                                                   }}
+                                              />
+                                            </div>
+                                          </div>
+                                      )}
+                                      <div
+                                          className="col-6 column"
+                                          style={{
+                                            paddingLeft: "20px",
+                                            width: columnWidths.column2,
+                                            margin:
+                                                sectionType === 2 &&
+                                                currentQuestion?.figurestatus === "false"
+                                                    ? "0px auto"
+                                                    : "",
+                                            float:
+                                                sectionType === 2 &&
+                                                currentQuestion?.figurestatus === "false"
+                                                    ? "none"
+                                                    : "left",
+                                          }}
+                                      >
+                                        {sectionType === 2 &&
+                                        currentQuestion?.figurestatus ===
+                                        "false" ? null : (
+                                            <button
+                                                className="column2_max"
+                                                onClick={() =>
+                                                    toggleColumnWidth("column2")
+                                                }
+                                            >
+                                              <img src='/images/righticon.png' border='0'/>
+                                            </button>
+                                        )}
+                                        <div className="row question_header"
+                                             style={{ marginLeft: "3px"}}>
+                                          <div className="question_no">
+                                            {currentQuestionIndex + 1}{" "}
+                                          </div>
+                                          <div
+                                              style={{ float: "left", width: "85%" }}
+                                          >
+                                            <div
+                                                style={{
+                                                  float: "left",
+                                                  marginRight: "10px",
+                                                }}
+                                                onClick={toggleBookMark}
+                                            >
+                                              <div
+                                                  className={
+                                                    currentQuestion?.bookmarked
+                                                        ? "bookmarked-class"
+                                                        : "not-bookmarked-class"
+                                                  }
+                                              >
+                                                {currentQuestion?.bookmarked ? (
+                                                    <i
+                                                        className="fa fa-bookmark"
+                                                        aria-hidden="true"
+                                                    ></i>
+                                                ) : (
+                                                    <i
+                                                        className="fa fa-bookmark-o"
+                                                        aria-hidden="true"
+                                                    ></i>
+                                                )}
+                                              </div>
+                                            </div>
+                                            Mark for Review
+                                          </div>
+                                          <div
+                                              title=""
+                                              className={`strikeeout ${
+                                                  showStrike ? "active" : ""
+                                              }`}
+                                              onClick={toggleStrike}
+                                          >
+                                            {showStrike ? "ABC" : "ABC"}
+                                            <span className="tooltiptext">
                                         Cross out answer choices you think are
                                         wrong.
                                       </span>
-                                    </div>
-                                  </div>
-                                  <div
-                                    style={{
-                                      paddingBottom: "5px",
-                                      paddingTop: "10px",
-                                    }}
-                                  >
-                                    {currentQuestion?.equation && (
-                                      <>
-                                        <div>
-                                          <MathJaxContext
-                                            version={3}
-                                            config={config}
-                                          >
-                                            <MathJax
-                                              inline
-                                              dynamic
-                                              hideUntilTypeset={"first"}
-                                            >
-                                              <div
-                                                dangerouslySetInnerHTML={{
-                                                  __html:
-                                                    currentQuestion?.equation,
-                                                }}
-                                              />
-                                            </MathJax>
-                                          </MathJaxContext>
+                                          </div>
                                         </div>
-                                        <br />
-                                      </>
-                                    )}
-
-                                    {currentQuestion?.question_type ===
-                                    "Math" ? (
-                                      <MathJaxContext
-                                        version={3}
-                                        config={config}
-                                      >
-                                        <MathJax
-                                          inline
-                                          dynamic
-                                          hideUntilTypeset={"first"}
-                                        >
-                                          <div
-                                            dangerouslySetInnerHTML={{
-                                              __html:
-                                                currentQuestion?.question_text,
+                                        <div
+                                            style={{
+                                              paddingBottom: "5px",
+                                              paddingTop: "10px",
                                             }}
-                                          />
-                                        </MathJax>
-                                      </MathJaxContext>
-                                    ) : (
-                                      // Render something else if sectionModule is not 2
-                                      <div
-                                        dangerouslySetInnerHTML={{
-                                          __html:
-                                            currentQuestion?.question_text,
-                                        }}
-                                      />
-                                    )}
-                                  </div>
+                                        >
+                                          {currentQuestion?.equation && (
+                                              <>
+                                                <div>
+                                                  <MathJaxContext version={3} config={config}>
+                                                    <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                      <div dangerouslySetInnerHTML={{ __html: currentQuestion?.equation }} />
+                                                    </MathJax>
+                                                  </MathJaxContext>
+                                                </div>
+                                                <br />
+                                              </>
+                                          )}
 
-                                  {sectionType === 2 &&
-                                  currentQuestion?.question_type === "Math" &&
-                                  currentQuestion.isgridIn.toLowerCase() ===
-                                    "true" ? (
-                                    <div style={{ fontSize: "20px" }}>
-                                      <input
-                                        type="text"
-                                        className="form-control answertextbox"
-                                        value={answertext}
-                                        onChange={handleAnswertextChange}
-                                      />
-                                      <br />
-                                      Answer Preview:{" "}
-                                      <span className="answer_preview">
+                                          {currentQuestion?.question_type === "Math" ? (
+                                              <MathJaxContext version={3} config={config}>
+                                                <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                  <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} />
+                                                </MathJax>
+                                              </MathJaxContext>
+                                          ) : (
+                                              // Render something else if sectionModule is not 2
+                                              <div dangerouslySetInnerHTML={{ __html: currentQuestion?.question_text }} />
+                                          )}
+                                        </div>
+
+                                        {sectionType === 2 &&
+                                        currentQuestion?.question_type === "Math" &&
+                                        currentQuestion.isgridIn.toLowerCase() === "true" ? (
+                                            <div style={{ fontSize: "20px" }}>
+                                              <input
+                                                  type="text"
+                                                  className="form-control answertextbox"
+                                                  value={answertext}
+                                                  onChange={handleAnswertextChange}
+                                              />
+                                              <br />
+                                              Answer Preview:{" "}
+                                              <span className="answer_preview">
                                         {answertext}
                                       </span>
-                                    </div>
-                                  ) : (
-                                    <ul className="question_ans scrollable-container">
-                                      {["A", "B", "C", "D"].map((choiceKey) => (
-                                        <div
-                                          key={choiceKey}
-                                          className="flex items-center justify-center"
-                                          style={{ paddingBottom: "15px" }}
-                                        >
-                                          <div
-                                            id={choiceKey}
-                                            onClick={() =>
-                                              handleOptionClick(choiceKey)
-                                            }
-                                            className={`flex border w-full rounded-lg px-2 cursor-pointer border-gray-500 false 
-                                              ${
-                                                currentQuestion?.strikeoptions &&
-                                                currentQuestion?.strikeoptions?.findIndex(
-                                                  (e) => e == choiceKey
-                                                ) !== -1
-                                                  ? "incorrect-option"
-                                                  : ""
-                                              } 
-                                              ${
-                                                selectedAnswer === choiceKey &&
-                                                !currentQuestion?.strikeoptions?.includes(
-                                                  choiceKey
-                                                )
-                                                  ? "highlighted"
-                                                  : ""
-                                              }`}
-                                          >
-                                            <div
-                                              className={`rounded-full h-[30px] w-[30px] flex items-center justify-center mr-5`}
-                                            >
-                                              <label className="radio-label">
-                                                <input
-                                                  type="radio"
-                                                  name="answer"
-                                                  checked={
-                                                    selectedAnswer === choiceKey
-                                                  }
-                                                  onChange={() =>
-                                                    handleAnswerSelect(
-                                                      choiceKey
-                                                    )
-                                                  }
-                                                />
-                                                <label className="letter">
-                                                  {choiceKey}
-                                                </label>
-                                              </label>
                                             </div>
-                                            <div>
-                                              {data.length >
-                                                currentQuestionIndex && (
-                                                <span>
-                                                  {currentQuestion?.question_type ===
-                                                  "Math" ? (
-                                                    <MathJaxContext
-                                                      version={3}
-                                                      config={config}
+                                        ) : (
+                                            <ul className="question_ans scrollable-container">
+                                              {["A", "B", "C", "D"].map((choiceKey) => (
+                                                  <div
+                                                      key={choiceKey}
+                                                      className="flex items-center justify-center"
+                                                      style={{ paddingBottom: "15px" }}
+                                                  >
+                                                    <div
+                                                        id={choiceKey}
+                                                        onClick={() =>
+                                                            handleOptionClick(choiceKey)
+                                                        }
+                                                        className={`flex border w-full rounded-lg px-2 cursor-pointer border-gray-500 false 
+                                              ${
+                                                            currentQuestion?.strikeoptions &&
+                                                            currentQuestion?.strikeoptions?.findIndex(
+                                                                (e) => e == choiceKey
+                                                            ) !== -1
+                                                                ? "incorrect-option"
+                                                                : ""
+                                                        } 
+                                              ${
+                                                            selectedAnswer === choiceKey && !currentQuestion?.strikeoptions?.includes(choiceKey)
+                                                                ? "highlighted"
+                                                                : ""
+                                                        }`}
                                                     >
-                                                      <MathJax
-                                                        inline
-                                                        dynamic
-                                                        hideUntilTypeset={
-                                                          "first"
-                                                        }
-                                                      >
-                                                        {
-                                                          currentQuestion[
-                                                            `choice_${choiceKey?.toLowerCase()}`
-                                                          ]
-                                                        }
-                                                      </MathJax>
-                                                    </MathJaxContext>
-                                                  ) : (
-                                                    // Render something else if sectionModule is not 2
-                                                    <span>
                                                       <div
-                                                        dangerouslySetInnerHTML={{
-                                                          __html:
-                                                            currentQuestion[
-                                                              `choice_${choiceKey?.toLowerCase()}`
-                                                            ],
-                                                        }}
-                                                      />{" "}
-                                                    </span>
-                                                  )}
+                                                          className={`rounded-full h-[30px] w-[30px] flex items-center justify-center mr-5`}
+                                                      >
+                                                        <label className="radio-label">
+                                                          <input
+                                                              type="radio"
+                                                              name="answer"
+                                                              checked={
+                                                                  selectedAnswer === choiceKey
+                                                              }
+                                                              onChange={() =>
+                                                                  handleAnswerSelect(
+                                                                      choiceKey
+                                                                  )
+                                                              }
+                                                          />
+                                                          <span className="letter">
+                                                  {choiceKey}
                                                 </span>
-                                              )}
-                                            </div>
-                                          </div>
-                                          {showStrike && currentQuestion ? (
-                                            currentQuestion?.strikeoptions &&
-                                            currentQuestion?.strikeoptions?.findIndex(
-                                              (e) => e == choiceKey
-                                            ) !== -1 ? (
-                                              <div
-                                                key={choiceKey}
-                                                onClick={() =>
-                                                  handleStrikeout(choiceKey)
-                                                }
-                                                className="undo-btn cursor-pointer rounded-full h-[20px] w-[40px] text-xs flex items-center justify-center ml-4"
-                                              >
-                                                <u>Undo</u>
-                                              </div>
-                                            ) : (
-                                              <div
-                                                key={choiceKey}
-                                                onClick={() =>
-                                                  handleStrikeout(choiceKey)
-                                                }
-                                                className="incorrect-btn cursor-pointer rounded-full h-[20px] w-[40px] text-xs border border-gray-400 flex items-center justify-center ml-4"
-                                              >
-                                                {choiceKey}
-                                              </div>
-                                            )
-                                          ) : null}
-                                        </div>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <></>
-                          )}
-                          {showModalAnswer ? (
-                            <div
-                              className="row"
-                              style={{ height: "100vh", marginTop: "95px" }}
-                            >
-                              <ModalAnswers
-                                score={score}
-                                moduleType={moduleType}
-                                sectionType={sectionType}
-                                test_id={questionTestId}
-                                selectedAnswer={selectedAnswer}
-                                data={data}
-                                isAttempted={isAttempted}
-                                currentQuestionIndex={currentQuestionIndex}
-                                showModalAnswer={showModalAnswer}
-                                onContinue={handleContinue}
-                                onCancel={handleCancel}
-                                onQuestionSelect={handleQuestionSelect}
-                                setShowModalAnswer={setShowModalAnswer}
-                                setShowGap={setShowGap}
-                                setLoading={setLoading}
-                                handleContinue={handleContinue}
-                                setShowModal={setShowModal}
-                              />
-                            </div>
-                          ) : (
-                            <></>
-                          )}
+                                                        </label>
+                                                      </div>
+                                                      <div>
+                                                        {data.length >
+                                                            currentQuestionIndex && (
+                                                                <span>
 
-                          <div
-                            className={`row ${
-                              isPauseTimer ? "disabled" : ""
-                            } fixed-footer`}
-                          >
-                            <hr className="dashed-border" />
-                            <div
-                              className="col-12"
-                              style={{ padding: "0px 20px" }}
-                            >
-                              <div className="col-4">
-                                <p>
-                                  {first_name} {last_name}
-                                </p>
-                              </div>
-                              <div className="col-4 question_numbers">
-                                {showModal && (
-                                  <QuestionModal
-                                    data={data}
-                                    section={sectionType}
-                                    module={moduleType}
-                                    currentQuestionIndex={currentQuestionIndex}
-                                    onQuestionSelect={handleQuestionSelect}
-                                    onClose={handleCloseModal}
-                                    goToReviewPage={goToReviewPage}
-                                  />
-                                )}
-                                <div className="pagination">
-                                  <button onClick={handleToggleModal}>
-                                    Question {currentQuestionIndex + 1} of{" "}
-                                    {data.length}{" "}
-                                    <i
-                                      className={`fa fa-angle-${
-                                        showModal ? "down" : "up"
-                                      }`}
-                                    ></i>
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="col-4 paginations">
-                                {currentQuestionIndex > 0 && (
-                                  <button
-                                    onClick={handlePrevQuestion}
-                                    disabled={currentQuestionIndex === 0}
+
+                                                      {currentQuestion?.question_type === "Math" ? (
+                                                          <MathJaxContext version={3} config={config}>
+                                                            <MathJax inline dynamic hideUntilTypeset={"first"}>
+                                                              {
+                                                                currentQuestion[
+                                                                    `choice_${choiceKey?.toLowerCase()}`
+                                                                    ]
+                                                              }
+                                                            </MathJax>
+                                                          </MathJaxContext>
+                                                      ) : (
+                                                          // Render something else if sectionModule is not 2
+                                                          <span><div dangerouslySetInnerHTML={{ __html: currentQuestion[
+                                                                `choice_${choiceKey?.toLowerCase()}`
+                                                                ] }} /> </span>
+                                                      )}
+                                                </span>
+                                                            )}
+                                                      </div>
+                                                    </div>
+                                                    {showStrike && currentQuestion ? (
+                                                        currentQuestion?.strikeoptions &&
+                                                        currentQuestion?.strikeoptions?.findIndex(
+                                                            (e) => e == choiceKey
+                                                        ) !== -1 ? (
+                                                            <div
+                                                                key={choiceKey}
+                                                                onClick={() =>
+                                                                    handleStrikeout(choiceKey)
+                                                                }
+                                                                className="undo-btn cursor-pointer rounded-full h-[20px] w-[40px] text-xs flex items-center justify-center ml-4"
+                                                            >
+                                                              <u>Undo</u>
+                                                            </div>
+                                                        ) : (
+                                                            <div
+                                                                key={choiceKey}
+                                                                onClick={() =>
+                                                                    handleStrikeout(choiceKey)
+                                                                }
+                                                                className="incorrect-btn cursor-pointer rounded-full h-[20px] w-[40px] text-xs border border-gray-400 flex items-center justify-center ml-4"
+                                                            >
+                                                              {choiceKey}
+                                                            </div>
+                                                        )
+                                                    ) : null}
+                                                  </div>
+                                              ))}
+                                            </ul>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                              ) : (
+                                  <></>
+                              )}
+                              {showModalAnswer ? (
+                                  <div
+                                      className="row"
+                                      style={{ height: "100vh", marginTop: "95px" }}
                                   >
-                                    Back
-                                  </button>
-                                )}
-                                <button onClick={handleNextQuestion}>
-                                  {currentQuestionIndex === data.length - 1
-                                    ? "Submit"
-                                    : "Next"}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                                    <ModalAnswers
+                                        score={score}
+                                        moduleType={moduleType}
+                                        sectionType={sectionType}
+                                        test_id={questionTestId}
+                                        selectedAnswer={selectedAnswer}
+                                        data={data}
+                                        isAttempted={isAttempted}
+                                        currentQuestionIndex={currentQuestionIndex}
+                                        show={showModalAnswer}
+                                        onContinue={handleContinue}
+                                        onCancel={handleCancel}
+                                        onQuestionSelect={handleQuestionSelect}
+                                    />
+                                  </div>
+                              ) : (
+                                  <></>
+                              )}
 
-                      {showDirections && (
-                        <div className="backgroundFade" id="backgroundFade">
-                          <div className="popupContainer">
-                            <div className="arrow-up"></div>
-                            <div id="popupContent">
-                              <div style={{ height: "320px" }}>
-                                <p>
-                                  The questions in this section address a number
-                                  of important reading and writing skills. Each
-                                  question includes one or more passages, which
-                                  may include a table or graph. Read each
-                                  passageand question carefully, and then choose
-                                  the best answer to the question based on the
-                                  passage(s).
-                                </p>
-                                <p>
-                                  All questions in this section are
-                                  multiple-choice with four answer choices. Each
-                                  question has a single best answer.
-                                </p>
+                              <div className={`row ${isPauseTimer ? 'disabled' : ''} fixed-footer`}>
+                                <hr className="dashed-border" />
+                                <div
+                                    className="col-12"
+                                    style={{ padding: "0px 20px" }}
+                                >
+                                  <div className="col-4">
+                                    <p>
+                                      {first_name} {last_name}
+                                    </p>
+                                  </div>
+                                  <div className="col-4 question_numbers">
+                                    {showModal && (
+                                        <QuestionModal
+                                            data={data}
+                                            section={sectionType}
+                                            module={moduleType}
+                                            currentQuestionIndex={currentQuestionIndex}
+                                            onQuestionSelect={handleQuestionSelect}
+                                            onClose={handleCloseModal}
+                                            goToReviewPage={goToReviewPage}
+                                        />
+                                    )}
+                                    <div className="pagination">
+                                      <button onClick={handleToggleModal}>
+                                        Question {currentQuestionIndex + 1} of{" "}
+                                        {data.length}{" "}
+                                        <i
+                                            className={`fa fa-angle-${
+                                                showModal ? "down" : "up"
+                                            }`}
+                                        ></i>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="col-4 paginations">
+                                    <button
+                                        onClick={handlePrevQuestion}
+                                        disabled={currentQuestionIndex === 0}
+                                    >
+                                      Back
+                                    </button>
+                                    <button onClick={handleNextQuestion}>
+                                      {currentQuestionIndex === data.length - 1
+                                          ? "Submit"
+                                          : "Next"}
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
-                              <button
-                                className="directionClose"
-                                onClick={toggleDirections}
-                              >
-                                Close
-                              </button>
                             </div>
                           </div>
-                        </div>
-                      )}
-                      {showAnnotationBox && (
-                        <div className="w-full h-[60%] fixed bottom-0 bg-gray-200">
-                          <div className="flex justify-between bg-gray-900 text-white px-16 py-3">
-                            <h1>
-                              New Annotation:
-                              <span className="ml-2 text-gray-300 text-sm">
+
+                          {showDirections && (
+                              <div
+                                  className="backgroundFade"
+                                  id="backgroundFade"
+                              >
+                                <div className="popupContainer">
+                                  <div className="arrow-up"></div>
+                                  <div id="popupContent">
+                                    <div style={{ height: "320px" }}>
+                                      <p>
+                                        The questions in this section
+                                        address a number of important
+                                        reading and writing skills. Each
+                                        question includes one or more
+                                        passages, which may include a table
+                                        or graph. Read each passageand
+                                        question carefully, and then choose
+                                        the best answer to the question
+                                        based on the passage(s).
+                                      </p>
+                                      <p>
+                                        All questions in this section are
+                                        multiple-choice with four answer
+                                        choices. Each question has a single
+                                        best answer.
+                                      </p>
+                                    </div>
+                                    <button
+                                        className="directionClose"
+                                        onClick={toggleDirections}
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                          )}
+                          {showAnnotationBox && (
+                              <div className="w-full h-[60%] fixed bottom-0 bg-gray-200">
+                                <div className="flex justify-between bg-gray-900 text-white px-16 py-3">
+                                  <h1>
+                                    New Annotation:
+                                    <span className="ml-2 text-gray-300 text-sm">
                                 {formatSelection(selectedText)}
                               </span>
-                            </h1>
-                            <div>
-                              <button
-                                onClick={() => setShowAnnotationBox(false)}
-                              >
-                                Close X
-                              </button>
-                            </div>
-                          </div>
-                          <div className="px-16 my-5">
-                            <div className="flex items-center space-x-5 mb-3">
-                              <div className="space-x-3 flex items-center justify-center">
-                                <label htmlFor="colorPicker">
-                                  Highlight Color:
-                                </label>
-                                <input
-                                  type="color"
-                                  id="colorPicker"
-                                  value={color}
-                                  onChange={(e) => setColor(e.target.value)}
-                                  style={{ backgroundColor: color }}
-                                  className="rounded-full w-0 h-0 outline-none border-[1px] border-gray-800 p-3"
-                                />
-                              </div>
-                              <div className="space-x-3 flex items-center justify-center">
-                                <div>Underline Style:</div>
-                                <button
-                                  onClick={() =>
-                                    setTextUnderline(!textUnderline)
-                                  }
-                                  className={`underline border-[1px] border-gray-800 px-1 ${
-                                    textUnderline && "border-[2px] font-bold"
-                                  }`}
-                                >
-                                  U
-                                </button>
-                              </div>
-                            </div>
-                            <div>
+                                  </h1>
+                                  <div>
+                                    <button
+                                        onClick={() => setShowAnnotationBox(false)}
+                                    >
+                                      Close X
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className="px-16 my-5">
+                                  <div className="flex items-center space-x-5 mb-3">
+                                    <div className="space-x-3 flex items-center justify-center">
+                                      <label htmlFor="colorPicker">
+                                        Highlight Color:
+                                      </label>
+                                      <input
+                                          type="color"
+                                          id="colorPicker"
+                                          value={color}
+                                          onChange={(e) => setColor(e.target.value)}
+                                          style={{ backgroundColor: color }}
+                                          className="rounded-full w-0 h-0 outline-none border-[1px] border-gray-800 p-3"
+                                      />
+                                    </div>
+                                    <div className="space-x-3 flex items-center justify-center">
+                                      <div>Underline Style:</div>
+                                      <button
+                                          onClick={() =>
+                                              setTextUnderline(!textUnderline)
+                                          }
+                                          className={`underline border-[1px] border-gray-800 px-1 ${
+                                              textUnderline && "border-[2px] font-bold"
+                                          }`}
+                                      >
+                                        U
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div>
                               <textarea
-                                value={note}
-                                onChange={(e) => setNote(e.target.value)}
-                                className="w-[60%] h-[100px] resize-none rounded border-[1px] border-gray-400 focus-within:border-gray-600 outline-none p-3"
+                                  value={note}
+                                  onChange={(e) => setNote(e.target.value)}
+                                  className="w-[60%] h-[100px] resize-none rounded border-[1px] border-gray-400 focus-within:border-gray-600 outline-none p-3"
                               />
 
-                              <div className="mt-2 space-x-2">
-                                <button
-                                  onClick={annotationSaveHandler}
-                                  className="rounded-3xl px-4 py-2 text-sm text-white bg-blue-700 hover:bg-blue-600"
-                                >
-                                  Save
-                                </button>
-                                <button className="rounded-3xl px-4 py-2 text-sm hover:bg-gray-300">
-                                  Cancel
-                                </button>
+                                    <div className="mt-2 space-x-2">
+                                      <button
+                                          onClick={annotationSaveHandler}
+                                          className="rounded-3xl px-4 py-2 text-sm text-white bg-blue-700 hover:bg-blue-600"
+                                      >
+                                        Save
+                                      </button>
+                                      <button className="rounded-3xl px-4 py-2 text-sm hover:bg-gray-300">
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      <Modal
-                        isOpen={isReportModalOpen}
-                        closeModal={closeReportModal}
-                        apiResponse={reportResponse}
-                      ></Modal>
-                    </>
-                  )}
+                          )}
+                          <Modal
+                              isOpen={isReportModalOpen}
+                              closeModal={closeReportModal}
+                              apiResponse={reportResponse}
+                          ></Modal>
+                        </>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    </>
+      </>
   );
 }
 
